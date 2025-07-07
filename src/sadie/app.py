@@ -6,7 +6,12 @@ from pathlib import Path
 from typing import Any, List, Union
 
 import click
-import pkg_resources
+
+try:
+    from importlib.metadata import version
+except ImportError:
+    # Fallback for Python < 3.8
+    from importlib_metadata import version
 
 # airr
 from sadie.airr import Airr
@@ -22,7 +27,7 @@ from sadie.renumbering import Renumbering
 from sadie.utility import SadieInputDir, SadieInputFile, SadieOutput
 from sadie.utility.util import get_project_root, getVerbosityLevel
 
-__version__ = pkg_resources.get_distribution("sadie-antibody").version
+__version__ = version("sadie-antibody")
 
 
 @click.group()

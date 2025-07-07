@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 import pandas as pd
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 # TODO: https://docs.airr-community.org/en/stable/news.html
@@ -251,7 +251,8 @@ class AirrSeriesModel(BaseModel):
         description="Species"
     )  # CK missing on https://docs.airr-community.org/en/stable/datarep/rearrangements.html
 
-    @root_validator(pre=True)
+    @model_validator(mode='before')
+    @classmethod
     def fix_dependent_attrs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Fixes dependent attributes that are not the proper type"""
         cleaned_values = {}
