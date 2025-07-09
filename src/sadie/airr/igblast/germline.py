@@ -53,6 +53,39 @@ class GermlineData:
         self.c_gene_dir = Path(self.blast_dir.__str__() + "C")
         self.aux_path = self.base_dir / f"aux_db/{scheme}/{name}_gl.aux"
 
+        # Validate auxiliary file exists - critical for CDR3 detection
+        if not self.aux_path.exists():
+            # Try alternative schemes or naming conventions
+            alternative_schemes = ["imgt", "kabat"]
+            found = False
+            for alt_scheme in alternative_schemes:
+                alt_path = self.base_dir / f"aux_db/{alt_scheme}/{name}_gl.aux"
+                if alt_path.exists():
+                    self.aux_path = alt_path
+                    found = True
+                    warnings.warn(f"Using auxiliary file from {alt_scheme} scheme instead of {scheme} for species {name}")
+                    break
+            
+            if not found:
+                available_aux_files = []
+                aux_base_dir = self.base_dir / "aux_db"
+                if aux_base_dir.exists():
+                    for scheme_dir in aux_base_dir.iterdir():
+                        if scheme_dir.is_dir():
+                            for aux_file in scheme_dir.glob("*.aux"):
+                                available_aux_files.append(str(aux_file.relative_to(self.base_dir)))
+                
+                error_msg = (
+                    f"Critical auxiliary file not found: {self.aux_path.relative_to(self.base_dir)}. "
+                    f"This file is required for CDR3 detection. "
+                )
+                if available_aux_files:
+                    error_msg += f"Available auxiliary files: {available_aux_files}"
+                else:
+                    error_msg += "No auxiliary files found in the database."
+                
+                raise FileNotFoundError(error_msg)
+
         # the literal 'internal_data/{name}` must be discovered by IgBLAST
         self.igdata = self.base_dir / f"{receptor}/"
 

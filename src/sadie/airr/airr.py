@@ -206,6 +206,16 @@ class Airr:
         self.igblast.aux_path = self.germline_data.aux_path
         self.igblast.organism = self.name
 
+        # Validate auxiliary path explicitly for better error messages
+        if not self.germline_data.aux_path.exists():
+            raise FileNotFoundError(
+                f"Critical auxiliary file missing: {self.germline_data.aux_path}. "
+                f"This file is required for CDR3 detection. Please check the installation or use a different species/scheme."
+            )
+        
+        # Log auxiliary file path for debugging
+        logger.debug(f"Using auxiliary file for CDR3 detection: {self.germline_data.aux_path}")
+
         if num_cpus == -1:
             self.igblast.num_threads = cpu_count()
         else:

@@ -652,6 +652,62 @@ class AirrTable(pd.DataFrame):
         logger.debug(f"Liability shouldn't have gotten here {pformat(X.to_dict())}")
         return True
 
+    def diagnose_cdr3_issues(self) -> pd.DataFrame:
+        """
+        Diagnose common CDR3 detection issues and provide helpful information.
+        
+        Returns
+        -------
+        pd.DataFrame
+            A summary of CDR3 issues found in the table
+        """
+        issues = []
+        
+        # Check for missing CDR3 fields
+        missing_cdr3 = self["cdr3"].isna().sum()
+        missing_cdr3_aa = self["cdr3_aa"].isna().sum()
+        
+        if missing_cdr3 > 0:
+            issues.append({
+                "issue": "Missing CDR3 nucleotide sequences",
+                "count": missing_cdr3,
+                "percentage": (missing_cdr3 / len(self)) * 100,
+                "description": "CDR3 nucleotide sequence is null/NaN - may indicate auxiliary file issues"
+            })
+        
+        if missing_cdr3_aa > 0:
+            issues.append({
+                "issue": "Missing CDR3 amino acid sequences", 
+                "count": missing_cdr3_aa,
+                "percentage": (missing_cdr3_aa / len(self)) * 100,
+                "description": "CDR3 amino acid sequence is null/NaN - may indicate auxiliary file issues"
+            })
+        
+        # Check for sequences with VDJ but no CDR3
+        has_vdj = (~self["v_call"].isna()) & (~self["j_call"].isna())
+        missing_cdr3_with_vdj = has_vdj & self["cdr3"].isna()
+        
+        if missing_cdr3_with_vdj.sum() > 0:
+            issues.append({
+                "issue": "Has VDJ calls but missing CDR3",
+                "count": missing_cdr3_with_vdj.sum(),
+                "percentage": (missing_cdr3_with_vdj.sum() / len(self)) * 100,
+                "description": "Sequence has V and J gene calls but CDR3 is missing - likely auxiliary file problem"
+            })
+        
+        # Check for liability issues
+        if "liable" in self.columns:
+            liable_count = self["liable"].sum()
+            if liable_count > 0:
+                issues.append({
+                    "issue": "Liable sequences detected",
+                    "count": liable_count,
+                    "percentage": (liable_count / len(self)) * 100,
+                    "description": "Sequences marked as liable - may have CDR3 detection issues"
+                })
+        
+        return pd.DataFrame(issues)
+
     def correct_indel(self) -> Union["AirrTable", "LinkedAirrTable"]:
         _fields = [
             ["sequence_alignment_aa", "germline_alignment_aa"],
