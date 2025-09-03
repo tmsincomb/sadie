@@ -1,4 +1,5 @@
 """This module houses the main Refernce object to manipulate the backend references"""
+
 from __future__ import annotations
 
 import logging
@@ -11,6 +12,7 @@ import pandas as pd
 import requests
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from requests.exceptions import RequestException
 
 from sadie.reference.models import GeneEntries, GeneEntry
 from sadie.reference.util import (
@@ -60,7 +62,12 @@ class Reference:
     def endpoint(self, endpoint: str) -> None:
         _counter = 0
         while True:
-            _get = requests.get(endpoint)
+            try:
+                _get = requests.get(endpoint)
+            except RequestException as e:
+                # Handle connection errors (DNS failures, connection refused, etc.)
+                raise G3Error(f"Failed to connect to {endpoint}: {str(e)}")
+
             if _get.status_code == 503:
                 _counter += 1
                 sleep(5)
@@ -230,6 +237,7 @@ class Reference:
                 "receptor",
                 "sequence",
                 "latin",
+                "gene_curation_source",
                 "imgt.sequence_gapped",
                 "imgt.sequence_gapped_aa",
                 "imgt.cdr3",
@@ -335,7 +343,8 @@ class References:
 
             # because a user could add genes multiple times, lets drop by unique id
             logger.info(f"dropping duplicated: {_df['_id'].duplicated().sum()}")
-            _df = _df.drop_duplicates("_id")
+            _df = _df[~_df["_id"].duplicated()]
+            # _df = _df.drop_duplicates("_id")
 
             # insert name at beggining
             _df.insert(0, "name", name)
