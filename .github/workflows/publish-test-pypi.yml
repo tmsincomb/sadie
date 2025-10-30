@@ -86,7 +86,7 @@ jobs:
 
       - name: Display installed package info
         run: |
-          pip show sadie-antibody
+          pip show sadie-test
 
   publish-test-pypi:
     name: Publish to TestPyPI
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/sadie-antibody
+      url: https://test.pypi.org/p/sadie-test
 
     steps:
       - name: Download built packages

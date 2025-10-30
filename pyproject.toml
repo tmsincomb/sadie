@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "sadie-antibody"
+name = "sadie-test"
 version = "0.0.0" # Placeholder - actual version from git tags via poetry-dynamic-versioning
 license = "MIT"
 description = "\"The Complete Antibody Library\""
