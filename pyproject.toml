@@ -99,12 +99,12 @@ build-backend = "poetry_dynamic_versioning.backend"
 enable = true
 vcs = "git"
 style = "pep440"
-pattern = "^v(?P<base>\\d+\\.\\d+\\.\\d+)"
+pattern = "^(?:test-)?v(?P<base>\\d+\\.\\d+\\.\\d+)"
 format-jinja = """
     {%- if distance == 0 -%}
         {{ base }}
     {%- else -%}
-        {{ base }}.dev{{ distance }}+{{ commit }}
+        {{ base }}.dev{{ distance }}
     {%- endif -%}
 """
 
