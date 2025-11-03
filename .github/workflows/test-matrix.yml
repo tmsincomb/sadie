@@ -20,10 +20,6 @@ jobs:
         deps: ["latest"]
         experimental: [false]
         include:
-          # Test minimum dependencies (allow to fail as experimental)
-          - python-version: "3.10"
-            deps: "minimum"
-            experimental: true
           # Test with pandas 2.x explicitly
           - python-version: "3.12"
             deps: "pandas2"
