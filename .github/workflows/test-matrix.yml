@@ -9,19 +9,25 @@ on:
 
 jobs:
   test-compatibility:
-    name: Test Python ${{ matrix.python-version }} / ${{ matrix.deps }}
-    runs-on: ubuntu-latest
+    name: Test Python ${{ matrix.python-version }} / ${{ matrix.deps }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
 
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         deps: ["latest"]
         experimental: [false]
         include:
-          # Test with pandas 2.x explicitly
-          - python-version: "3.12"
+          # Test with pandas 2.x explicitly on both OS
+          - os: ubuntu-latest
+            python-version: "3.12"
+            deps: "pandas2"
+            experimental: false
+          - os: macos-latest
+            python-version: "3.12"
             deps: "pandas2"
             experimental: false
 
@@ -50,7 +56,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.deps }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.deps }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies (latest)
         if: matrix.deps == 'latest'
