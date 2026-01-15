@@ -5,14 +5,14 @@
 
 ## Summary
 
-Complete the germlines module by implementing VDJbase provider, populating reference data sources (IMGT/OGRDB/VDJbase), integrating with existing Sadie components (IgBLAST, Reference, HMM), and removing G3 API dependency. The implementation uses a phased migration approach with feature flag, reuses existing Sadie ANARCI/HMMER for auto-gapping, and employs a provider-based architecture for multi-source germline database management with priority-based merging.
+Complete the germlines module by implementing VDJbase provider, populating reference data sources (IMGT/OGRDB/VDJbase), integrating with existing Sadie components (IgBLAST, Reference, HMM), and removing G3 API dependency. The implementation uses a phased migration approach with feature flag, uses Biopython alignment-based auto-gapping, and employs a provider-based architecture for multi-source germline database management with priority-based merging.
 
 ## Technical Context
 
 **Language/Version**: Python 3.11 (existing Sadie requirement)
 **Primary Dependencies**:
-- BioPython (FASTA parsing, SeqIO)
-- ANARCI/HMMER (existing Sadie dependency for IMGT gapping)
+- BioPython (FASTA parsing, SeqIO, pairwise alignment)
+- HMMER (existing Sadie dependency for hmmbuild; not used for gapping)
 - subprocess (makeblastdb for BLAST database generation)
 - Python logging module (structured logging)
 - hashlib (change detection via file hashing)
@@ -30,7 +30,7 @@ Complete the germlines module by implementing VDJbase provider, populating refer
 - Offline-capable after initial setup (no runtime network calls)
 - <500MB disk space for human reference data (IMGT + OGRDB + VDJbase)
 - Backward compatible with existing Sadie API
-- Must reuse existing Sadie infrastructure (ANARCI, logging patterns)
+- Must reuse existing Sadie infrastructure (logging patterns, path conventions)
 
 **Scale/Scope**:
 - ~450 IGHV genes from IMGT
@@ -55,7 +55,7 @@ Complete the germlines module by implementing VDJbase provider, populating refer
 
 ### Principle III: Local-First Operation ✓
 - **Requirement**: No runtime external API dependencies
-- **Implementation**: Feature flag enables G3 fallback during validation period only
+- **Implementation**: Feature flag explicitly selects G3 or germlines path; no automatic fallback during validation
 - **Status**: PASS - VDJbase uses manual FASTA files, IMGT/OGRDB automated download stores locally
 
 ### Principle IV: Staged Pipeline Architecture ✓
@@ -65,8 +65,8 @@ Complete the germlines module by implementing VDJbase provider, populating refer
 
 ### Principle V: Integration Compatibility ✓
 - **Requirement**: Backward compatibility with existing Sadie components
-- **Implementation**: Adapter pattern maintains G3 API response format, feature flag enables gradual migration
-- **Status**: PASS - Phased migration strategy with parallel operation minimizes breaking changes
+- **Implementation**: Adapter pattern maintains G3 API response format; feature flag enables gradual migration without automatic fallback
+- **Status**: PASS - Phased migration strategy with explicit feature flag minimizes breaking changes
 
 **GATE RESULT: PASS** - All constitutional principles satisfied. No complexity justification required.
 
@@ -103,7 +103,7 @@ src/sadie/germlines/
 ├── builders/
 │   ├── blast.py                         # BLAST DB builder (exists)
 │   ├── aux.py                           # Auxiliary file builder (exists)
-│   └── gapper.py                        # Auto-gapping using ANARCI (NEW - to implement)
+│   └── gapper.py                        # Auto-gapping using BioPython alignment (NEW - to implement)
 │
 ├── sources/
 │   ├── custom/                          # Custom sequences (exists)
@@ -112,6 +112,17 @@ src/sadie/germlines/
 │   └── vdjbase/                         # VDJbase data (NEW - directory to create)
 │       ├── README.md                    # Manual download instructions (NEW)
 │       └── human/                       # Human VDJbase data (NEW)
+│
+├── normalized/                           # Processed data (Stage 2)
+│   └── {species}/
+│       ├── gapped/                      # IMGT-gapped sequences
+│       └── ungapped/                    # Ungapped sequences
+│
+├── igblast/                              # IgBLAST format (Stage 3)
+│   ├── database/
+│   │   └── {species}/
+│   ├── aux_db/
+│   └── internal_data/
 │
 ├── scripts/
 │   ├── download_imgt.py                 # IMGT downloader (exists, needs completion)
@@ -124,11 +135,10 @@ src/sadie/germlines/
     ├── test_gapper.py                   # Gapping tests (NEW - to implement)
     ├── test_integration.py              # Full pipeline tests (NEW - to implement)
     └── data/
-        └── germlines/                   # Test dataset (NEW - to create)
-            ├── custom/
-            ├── imgt/
-            ├── ogrdb/
-            └── vdjbase/
+        ├── custom/                      # Test dataset (NEW - to create)
+        ├── imgt/
+        ├── ogrdb/
+        └── vdjbase/
 
 src/sadie/airr/igblast/
 └── germline.py                          # IgBLAST integration (MODIFY - update paths)
@@ -157,9 +167,10 @@ src/sadie/renumbering/aligners/
    - Research needed: VDJbase website/API documentation, example files
    - Impact: VDJbase provider implementation
 
-2. **ANARCI Integration for Gapping**
-   - Question: How to programmatically call ANARCI for single-sequence gapping?
-   - Research needed: Sadie's existing ANARCI usage patterns
+2. **Biopython Alignment Strategy for Gapping**
+   - Decision: Use per-gene IMGT-gapped templates when available; fallback to per-segment consensus template
+   - Template source: IMGT provider gapped FASTA in `src/sadie/germlines/sources/imgt/`; consensus derived from those gapped sequences
+   - Research needed: Identify available gapped references in IMGT sources; evaluate Bio.Align/PairwiseAligner settings for AA alignment
    - Impact: Gapper module implementation
 
 3. **G3 API Response Format**
@@ -202,7 +213,7 @@ src/sadie/renumbering/aligners/
 
 3. **GapperService** (new)
    - Methods: gap_sequence(sequence: str, segment: str) → str
-   - Dependencies: ANARCI/HMMER via existing Sadie infrastructure
+   - Dependencies: BioPython alignment utilities (pairwise AA alignment)
    - Error handling: Returns original if gapping fails, logs warning
 
 4. **FeatureFlag** (new)
@@ -286,16 +297,18 @@ class G3AdapterInterface:
             {
                 'gene': str,
                 'sequence': str,
+                'sequence_gapped': str,
                 'species': str,
                 'segment': str,
                 'chain': str,
                 'source': str,
-                'imgt': {
-                    'sequence_gapped': str,
-                    'sequence_gapped_aa': str,
-                    'imgt_functional': str,
-                    'cdr3_aa': str,
-                    'fwr4_aa': str
+                'functional': bool,
+                'regions': {
+                    'fwr1': str,
+                    'cdr1': str,
+                    'fwr2': str,
+                    'cdr2': str,
+                    'fwr3': str
                 }
             }
         """
@@ -326,7 +339,7 @@ class G3AdapterInterface:
 
 2. **Populate test data**:
    ```bash
-   # Test dataset already in repo: tests/data/germlines/
+  # Test dataset already in repo: src/sadie/germlines/tests/data/
    pytest src/sadie/germlines/tests/ --co  # Verify tests discovered
    ```
 
@@ -340,26 +353,26 @@ class G3AdapterInterface:
 1. **VDJbase Provider** (2-3 hours)
    - File: `src/sadie/germlines/providers/vdjbase.py`
    - Pattern: Copy ogrdb.py structure, modify for VDJbase format
-   - Test: `tests/test_vdjbase_provider.py`
+  - Test: `src/sadie/germlines/tests/test_vdjbase_provider.py`
 
 2. **Auto-Gapping Service** (2-3 hours)
    - File: `src/sadie/germlines/builders/gapper.py`
-   - Integration: Call existing ANARCI via Sadie infrastructure
-   - Test: `tests/test_gapper.py`
+   - Integration: Use BioPython AA alignment against IMGT-gapped templates (per-gene fallback to per-segment consensus) to derive gap positions
+  - Test: `src/sadie/germlines/tests/test_gapper.py`
 
 3. **Download Scripts** (3-4 hours)
-   - Files: `scripts/download_ogrdb.py`, complete `download_imgt.py`
+   - Files: `src/sadie/germlines/scripts/download_ogrdb.py`, complete `src/sadie/germlines/scripts/download_imgt.py`
    - Features: Species filtering, resume, validation
    - Test: Manual testing + validation script
 
 4. **Integration Updates** (4-5 hours)
-   - Files: `airr/igblast/germline.py`, `reference/reference.py`, `renumbering/aligners/hmmer.py`
+   - Files: `src/sadie/airr/igblast/germline.py`, `src/sadie/reference/reference.py`, `src/sadie/renumbering/aligners/hmmer.py`
    - Pattern: Add feature flag check, update paths, maintain backward compatibility
    - Test: Existing Sadie test suite (regression)
 
 5. **Feature Flag & Migration** (2-3 hours)
    - Files: Environment variable handling, adapter pattern
-   - Testing: Both modes (germlines and G3 fallback)
+   - Testing: Both modes (germlines and G3 via feature flag)
 
 ## Key Patterns
 
@@ -432,9 +445,9 @@ for provider in manager.providers:
 
 ## Common Issues
 
-1. **FASTA not found**: Check `sources/{provider}/{species}/` exists
-2. **Gapping fails**: Verify ANARCI accessible via existing Sadie import
-3. **Tests fail**: Ensure test dataset populated in `tests/data/germlines/`
+1. **FASTA not found**: Check `src/sadie/germlines/sources/{provider}/{species}/` exists
+2. **Gapping fails**: Verify IMGT gapped reference exists and alignment settings are valid
+3. **Tests fail**: Ensure test dataset populated in `src/sadie/germlines/tests/data/`
 ```
 
 ### Agent Context Update
@@ -443,7 +456,7 @@ for provider in manager.providers:
 
 **Content to add** (new technologies from this plan):
 - VDJbase FASTA format parsing
-- ANARCI programmatic integration for gapping
+- BioPython alignment-based gapping
 - Feature flag pattern for phased migration
 - Curated test dataset approach
 
@@ -460,7 +473,7 @@ for provider in manager.providers:
 - Status: PASS
 
 ### Principle III: Local-First Operation ✓
-- Design: VDJbase uses manual FASTA files; feature flag for G3 is validation-period only
+- Design: VDJbase uses manual FASTA files; feature flag explicitly selects G3 during validation (no automatic fallback)
 - Status: PASS
 
 ### Principle IV: Staged Pipeline Architecture ✓
@@ -491,7 +504,7 @@ for provider in manager.providers:
 
 | Risk | Impact | Mitigation |
 |------|---------|------------|
-| ANARCI integration complexity | High | Use existing Sadie patterns; fallback to ungapped if fails |
+| Biopython gapping accuracy | High | Align to IMGT-gapped templates per gene (fallback to per-segment consensus); fallback to ungapped on failure |
 | VDJbase format changes | Medium | Manual FASTA approach; well-documented README |
 | G3 parity during migration | High | Feature flag + extensive regression testing |
 | Test data completeness | Medium | Curated test dataset covers edge cases; document limitations |
@@ -525,4 +538,4 @@ From spec success criteria (SC-001 to SC-015):
 6. Update documentation as implementation progresses
 
 **Plan Status**: Ready for Phase 0 execution
-**Estimated Total Implementation Time**: 20-25 hours (VDJbase 3h + Gapping 3h + Downloads 4h + Integration 5h + Testing 3h + Documentation 2h + Buffer 5h)
+**Estimated Total Implementation Time**: 24-28 hours (VDJbase 3h + Gapping 3h + Downloads 4h + Integration 5h + Testing 5h + Documentation 2h + Buffer 6h)
