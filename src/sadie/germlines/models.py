@@ -211,7 +211,7 @@ class ProcessingMetadata(BaseModel):
     processed_at: datetime = Field(..., description="Processing timestamp")
     num_sequences: int = Field(..., description="Number of sequences")
     file_hash: str = Field(..., description="File hash for change detection")
-    sequences: List[Dict[str, any]] = Field(
+    sequences: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Sequence summaries"
     )

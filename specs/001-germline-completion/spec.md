@@ -63,6 +63,8 @@ A researcher wants to use OGRDB alleles preferentially over IMGT when available,
 
 **Independent Test**: Configure manager with priority `["ogrdb", "imgt"]`, run annotation, verify OGRDB alleles used when present and IMGT used for genes absent from OGRDB.
 
+**Note**: This tests user-configured priority override. Default system priority is `custom > ogrdb > vdjbase > imgt`.
+
 **Acceptance Scenarios**:
 
 1. **Given** both OGRDB and IMGT have IGHV1-69*01, **When** priority is `["ogrdb", "imgt"]`, **Then** OGRDB version is used for annotation
@@ -148,7 +150,7 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 #### Data Population
 - **FR-005**: System MUST provide download scripts for IMGT data (`src/sadie/germlines/scripts/download_imgt.py`)
 - **FR-006**: System MUST provide download scripts for OGRDB data (`src/sadie/germlines/scripts/download_ogrdb.py`)
-- **FR-007**: System MUST document manual download instructions for VDJbase data in `src/sadie/germlines/sources/vdjbase/README.md` (automated download script is optional future enhancement)
+- **FR-007**: VDJbase automated download script is optional future enhancement; manual download instructions covered by FR-010
 - **FR-008**: Download scripts MUST support species parameter (e.g., `--species human mouse`)
 - **FR-009**: Download scripts MUST validate downloaded data (valid FASTA, expected file structure)
 - **FR-009a**: Valid FASTA validation MUST check: (1) file contains at least one header line starting with ">", (2) sequences contain only valid nucleotides (ACGT) or IUPAC ambiguity codes (RYSWKMBDHVN), (3) no empty sequences, (4) headers contain parseable gene identifiers
@@ -166,6 +168,7 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 - **FR-013**: System MUST implement HMM builder in germlines module for renumbering system
 - **FR-013a**: HMM builder MUST accept gapped V/J sequences and generate Stockholm format alignment files for HMMER hmmbuild
 - **FR-013b**: HMM builder MUST call GermlineManager.get_gapped_sequences(species, segment) returning List[Tuple[gene_name, gapped_sequence]]
+- **FR-013c**: Stockholm alignment MUST include minimum 3 sequences per segment/chain combination. Sequences selected by: (1) all functional alleles from highest-priority provider, (2) if <3, add from next provider in priority order. Maximum 100 sequences per alignment to limit file size.
 - **FR-014**: System MUST maintain existing API signatures for GermlineData class (backward compatibility)
 - **FR-014a**: GermlineData class MUST support legacy methods: get_v_genes(species), get_d_genes(species), get_j_genes(species) returning List[str] of gene names
 - **FR-015**: System MUST return gene data in G3-compatible format from Reference system for existing code
@@ -189,6 +192,7 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 - **FR-021b**: Gapper MUST translate nucleotide sequence to amino acid before alignment, then map gaps back to nucleotide sequence using codon positions
 - **FR-021c**: If alignment fails, system MUST log WARNING "Failed to gap sequence {gene_name}: {error}" and store ungapped version only
 - **FR-021d**: Gap characters MUST use "." (period) for consistency with IMGT gapped format, inserted at codon boundaries in nucleotide sequences
+- **FR-021e**: If no IMGT-gapped template exists for a gene (e.g., novel custom allele), system MUST use the per-segment consensus template from IMGT provider and log WARNING "No gene-specific template for {gene_name}, using {segment} consensus template"
 - **FR-022**: System MUST store both gapped and ungapped versions in normalized/
 - **FR-022a**: Normalized directory structure MUST be: normalized/{species}/gapped/IG{chain}{segment}.fasta and normalized/{species}/ungapped/IG{chain}{segment}.fasta
 - **FR-023**: D segments MUST be stored under normalized/{species}/ungapped/ only (no gapping required)
@@ -215,7 +219,22 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 - **FR-038**: System MUST generate makeblastdb command with parameters: `-dbtype nucl -parse_seqids -hash_index` for nucleotide databases
 - **FR-038a**: BLAST database files MUST be stored in igblast/database/{species}/ with naming convention: {species}_{segment}.nhr, .nin, .nsq (input FASTA: {species}_{segment}.fasta)
 - **FR-039**: System MUST generate IgBLAST internal_data files: organism.yaml containing species metadata and available segments
-- **FR-039a**: organism.yaml format MUST be: `{species}: {chain: {segments: [V, D, J], path: "igblast/database/{species}/"}}`
+- **FR-039a**: organism.yaml format MUST be:
+  ```yaml
+  {species}:
+    display_name: "{Species Name}"  # e.g., "Homo sapiens"
+    chains:
+      - name: "IGH"
+        segments: [V, D, J]
+        path: "igblast/database/{species}/"
+      - name: "IGK"
+        segments: [V, J]
+        path: "igblast/database/{species}/"
+      - name: "IGL"
+        segments: [V, J]
+        path: "igblast/database/{species}/"
+    version: "{data_version}"  # ISO date of last rebuild (YYYY-MM-DD)
+  ```
 
 #### Observability & Logging
 - **FR-032**: System MUST implement structured logging at INFO, WARNING, and ERROR levels using Python logging module
@@ -253,7 +272,7 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 - **SC-005**: Germlines module uses <500MB disk space for human reference data (IMGT + OGRDB + VDJbase)
 - **SC-006**: Priority ordering produces different gene selections: `["ogrdb", "imgt"]` vs `["imgt", "ogrdb"]` yields measurably different results when providers overlap
 - **SC-007**: Feature flag successfully controls germlines vs G3 usage; germlines module is default and fully functional; G3 code isolated behind feature flag for validation period
-- **SC-008**: Documentation provides step-by-step setup instructions that new user can complete in under 30 minutes
+- **SC-008**: Documentation provides step-by-step setup instructions that new user can complete in under 30 minutes (measured from git clone to first successful annotation run, including download script execution and validation)
 - **SC-009**: Change detection correctly triggers rebuild only when src/sadie/germlines/sources/ files change (verified via timestamp checks)
 - **SC-010**: System provides clear, actionable error messages for 100% of common failure modes (missing data, corrupt files, invalid sequences) with structured logging at appropriate levels
 - **SC-011**: Timing metrics are logged for all major operations (download, rebuild, validation) allowing performance monitoring
