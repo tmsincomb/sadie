@@ -26,10 +26,11 @@ class GermlineManager:
     """
     Manages multiple germline databases with priority-based lookup.
 
-    Default priority: custom > imgt > ogrdb
+    Default priority: custom > imgt > ogrdb > vdjbase
     - Custom sequences override everything
     - IMGT provides validated reference
     - OGRDB adds novel alleles
+    - VDJbase provides population-specific genotypes
 
     Deduplication Logic:
     1. If gene names match exactly → use first provider's version
@@ -47,7 +48,7 @@ class GermlineManager:
     >>> genes = manager.get_genes("human", "V", "H")
     """
 
-    DEFAULT_PROVIDERS = ["custom", "imgt", "ogrdb"]
+    DEFAULT_PROVIDERS = ["custom", "imgt", "ogrdb", "vdjbase"]
 
     def __init__(
         self,
@@ -61,7 +62,7 @@ class GermlineManager:
         ----------
         providers : List[str], optional
             Ordered list of provider names.
-            Default: ["custom", "imgt", "ogrdb"]
+            Default: ["custom", "imgt", "ogrdb", "vdjbase"]
             First provider has highest priority.
         data_dir : Path, optional
             Base directory for germline data.
@@ -139,6 +140,10 @@ class GermlineManager:
         if name == "ogrdb":
             from .providers.ogrdb import OGRDBProvider
             return OGRDBProvider(data_dir / "ogrdb")
+
+        if name == "vdjbase":
+            from .providers.vdjbase import VDJbaseProvider
+            return VDJbaseProvider(data_dir / "vdjbase")
 
         return None
 

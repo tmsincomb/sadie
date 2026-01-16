@@ -292,7 +292,7 @@ def use_germlines_module() -> bool:
 # T009
 gh issue create \
     --repo "$REPO" \
-    --title "[Germlines][P1][Foundation] Implement auto-gapping service using ANARCI" \
+    --title "[Germlines][P1][Foundation] Implement auto-gapping service using BioPython" \
     --body "**Task**: T009
 **Phase**: 2 - Foundational Components
 **Priority**: P1
@@ -301,12 +301,12 @@ gh issue create \
 **Prerequisites**: Phase 1 complete
 
 **Description**:
-Implement auto-gapping service using ANARCI in \`src/sadie/germlines/builders/gapper.py\`
+Implement auto-gapping service using BioPython pairwise alignment in \`src/sadie/germlines/builders/gapper.py\`
 
 **Acceptance Criteria**:
-- [ ] Gapper service implemented reusing existing Sadie ANARCI infrastructure
-- [ ] Calls \`sadie.renumbering.anarci.number_sequence()\` with IMGT scheme
-- [ ] Translates nucleotide to amino acid before calling ANARCI
+- [ ] Gapper service implemented using BioPython PairwiseAligner
+- [ ] Uses per-gene IMGT-gapped template when available; fallback to per-segment consensus
+- [ ] Translates nucleotide to amino acid before alignment
 - [ ] Maps gaps back to nucleotide sequence using codon positions
 - [ ] Uses \".\" (period) for gap characters at codon boundaries
 - [ ] Handles failures gracefully: logs WARNING and stores ungapped version only

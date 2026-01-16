@@ -104,12 +104,12 @@ This checklist validates that the 22 gaps, 7 ambiguities, and 3 conflicts identi
 
 ### Auto-Gapping Requirements
 
-- [ ] VAL-020 - ANARCI integration interface documented [Closes CHK021]
-  - **Check**: FR-021a specifies exact method call: sadie.renumbering.anarci.number_sequence()
+- [ ] VAL-020 - BioPython alignment interface documented [Closes CHK021]
+  - **Check**: FR-021a specifies BioPython PairwiseAligner against IMGT-gapped templates (per-gene when available, fallback to per-segment consensus)
   - **Status**: ✅ CLOSED - Integration point precise
 
 - [ ] VAL-021 - Gapping workflow specified [Closes CHK021]
-  - **Check**: FR-021b defines nucleotide→AA→ANARCI→map gaps back to codons
+  - **Check**: FR-021b defines nucleotide→AA→BioPython alignment→map gaps back to codons
   - **Status**: ✅ CLOSED - Workflow steps explicit
 
 - [ ] VAL-022 - Gapping failure handling defined [Closes CHK022]

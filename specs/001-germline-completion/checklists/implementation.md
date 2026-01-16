@@ -45,7 +45,7 @@
 ### Auto-Gapping Requirements
 
 - [ ] CHK020 - Are gap character requirements specified (dots vs dashes, positioning)? [Clarity, Spec §FR-021]
-- [ ] CHK021 - Is the ANARCI/HMMER integration interface documented in requirements? [Gap, Spec §FR-021]
+- [ ] CHK021 - Is the BioPython alignment integration interface documented in requirements? [Gap, Spec §FR-021]
 - [ ] CHK022 - Are requirements defined for both gapped and ungapped version storage? [Completeness, Spec §FR-022]
 - [ ] CHK023 - Is the detection algorithm for ungapped sequences specified? [Clarity, Spec §FR-020]
 - [ ] CHK024 - Are D segment handling requirements explicit (ungapped only)? [Completeness, Spec §FR-023]
@@ -158,7 +158,7 @@
 - [ ] CHK079 - Are requirements specified for missing data directory scenarios? [Coverage, Spec §US2-AS2]
 - [ ] CHK080 - Are requirements defined for FASTA parsing failures? [Gap, Spec §FR-002]
 - [ ] CHK081 - Are requirements specified for makeblastdb failures? [Gap, Edge Cases]
-- [ ] CHK082 - Are requirements defined for ANARCI/HMMER gapping failures? [Gap, Spec §FR-021]
+- [ ] CHK082 - Are requirements defined for BioPython alignment gapping failures? [Gap, Spec §FR-021]
 - [ ] CHK083 - Are requirements specified for download script interruptions? [Coverage, Spec §US6-AS3]
 
 ### Recovery Scenarios
@@ -243,7 +243,7 @@
 
 - [ ] CHK120 - Are IMGT data licensing requirements documented? [Completeness, Assumptions §1]
 - [ ] CHK121 - Are VDJbase data availability assumptions validated? [Assumption, Assumptions §2]
-- [ ] CHK122 - Are ANARCI/HMMER availability requirements specified? [Completeness, Plan §Dependencies]
+- [ ] CHK122 - Are BioPython availability requirements specified? [Completeness, Plan §Dependencies]
 - [ ] CHK123 - Are makeblastdb version compatibility requirements defined? [Gap, Plan §Dependencies]
 
 ### Data Format Assumptions

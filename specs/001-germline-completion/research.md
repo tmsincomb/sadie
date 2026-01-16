@@ -132,140 +132,167 @@ class VDJbaseProvider(GermlineProvider):
 
 ## 2. Biopython Alignment Strategy for Gapping
 
-**Status**: PARTIALLY RESOLVED
+**Status**: RESOLVED
 
 ### Question
 How to use Biopython alignment for auto-gapping sequences to IMGT format?
 
-### Current Decision
+### Decision
 
 Use per-gene IMGT-gapped templates when available; fallback to per-segment consensus template.
 
 **Template source**: IMGT provider gapped FASTA in `src/sadie/germlines/sources/imgt/`
 
-### Remaining Research Needed
+### Implementation (Completed)
 
-1. **Identify available gapped references** in IMGT sources
-2. **Evaluate Bio.Align/PairwiseAligner settings** for AA alignment:
-   - Appropriate substitution matrix (BLOSUM62?)
-   - Gap open/extend penalties
-   - End gap handling
-3. **Consensus template derivation** from gapped sequences
+The `GapperService` has been implemented in `src/sadie/germlines/builders/gapper.py` with:
 
-### Implementation Approach
+1. **BioPython PairwiseAligner** configured for antibody sequences:
+   - Global alignment mode
+   - Match score: 2.0, mismatch: -1.0
+   - Gap open: -10.0, extend: -0.5
+   - End gaps allowed without penalty
 
-```python
-from Bio.Align import PairwiseAligner
+2. **Template Strategy**:
+   - Per-gene template lookup (exact match by gene name)
+   - Per-segment consensus fallback (built from available gapped sequences)
+   - Templates cached for performance
 
-class GapperService:
-    def gap_sequence(self, sequence: str, segment: str, scheme: str = "imgt") -> str:
-        # 1. Translate to amino acids
-        # 2. Find best matching IMGT-gapped template
-        # 3. Align AA sequences using PairwiseAligner
-        # 4. Map gaps back to nucleotide positions
-        # 5. Return gapped nucleotide sequence
-        pass
-```
+3. **Workflow**:
+   - Translate nucleotide to amino acid
+   - Align AA sequences using PairwiseAligner
+   - Extract gap positions from template
+   - Apply gaps to nucleotide sequence at codon boundaries
+   - Use "." (period) as gap character per IMGT convention
+
+4. **Error Handling**:
+   - D segments return None (no gapping required)
+   - Failed gapping logs WARNING and returns None
+   - Graceful degradation on missing templates
 
 ---
 
 ## 3. G3 API Response Format
 
-**Status**: NEEDS RESEARCH
+**Status**: RESOLVED
 
 ### Question
 What exact JSON format does G3 return for gene queries?
 
-### Research Approach
+### Findings
 
-1. Inspect existing G3 client code in `src/sadie/renumbering/clients/`
-2. Capture sample API responses
-3. Document field mappings for adapter pattern
-
-### Expected Fields (from plan.md)
+From `src/sadie/renumbering/clients/g3.py`, the G3 client returns gene data with the following structure:
 
 ```json
 {
-  "gene": "string",
-  "sequence": "string",
-  "sequence_gapped": "string",
-  "species": "string",
-  "segment": "string",
-  "chain": "string",
-  "source": "string",
-  "functional": "boolean",
+  "gene": "IGHV1-69*01",
+  "sequence": "CAGGTGCAGCTGGTGGAG...",
+  "sequence_gapped": "CAGGTGCAGCTGGTGGAG......",
+  "species": "human",
+  "segment": "V",
+  "chain": "H",
+  "source": "imgt",
+  "functional": true,
   "regions": {
-    "fwr1": "string",
-    "cdr1": "string",
-    "fwr2": "string",
-    "cdr2": "string",
-    "fwr3": "string"
+    "fwr1": "CAGGTGCAGCTGGTGGAG",
+    "cdr1": "GGTGGCAGCTTC",
+    "fwr2": "TGGGTGCGCCAG",
+    "cdr2": "ATAGACAGCAGTGGC",
+    "fwr3": "CGCTCCGTGAAGGGCCGATTC"
   }
 }
 ```
 
-### Action Items
+### Key Implementation Details
 
-- [ ] Read `src/sadie/renumbering/clients/g3.py` to understand current implementation
-- [ ] Document actual API response structure
-- [ ] Identify all fields needed by Reference system
+- G3 API endpoint: `https://g3.jordanrwillis.com/api/v1/genes`
+- Uses LRU caching for performance
+- Filters out certain species (pig, cow, cat, alpaca, rhesus, dog)
+- Builds Stockholm alignments for HMM creation via `pyhmmer`
+
+### Adapter Pattern
+
+The Reference system adapter (`FR-012b`) should:
+1. Call `GermlineManager.get_gene_by_name(name, species)`
+2. Transform `GermlineGene` object to G3 response format
+3. Return dict matching the structure above
 
 ---
 
 ## 4. IgBLAST Auxiliary File Format
 
-**Status**: NEEDS RESEARCH
+**Status**: RESOLVED
 
 ### Question
 What CDR/FWR annotations are required in auxiliary files?
 
-### Research Approach
+### Findings
 
-1. Review IgBLAST documentation
-2. Inspect existing Sadie auxiliary files in `src/sadie/germlines/`
-3. Document required columns and format
+From `src/sadie/germlines/builders/aux.py`, the auxiliary file format is:
 
-### Expected Format (preliminary)
+**Format**: Tab-separated values (TSV)
 
-TSV file with columns:
-- Gene name
-- FWR1 start/end
-- CDR1 start/end
-- FWR2 start/end
-- CDR2 start/end
-- FWR3 start/end
+**Columns**:
+1. `gene_name` - Gene identifier (e.g., "IGHV1-69*01")
+2. `chain` - Chain type (H, K, L)
+3. `segment` - Segment type (V, J)
+4. `fwr1_start`, `fwr1_end` - Framework 1 boundaries
+5. `cdr1_start`, `cdr1_end` - CDR1 boundaries
+6. `fwr2_start`, `fwr2_end` - Framework 2 boundaries
+7. `cdr2_start`, `cdr2_end` - CDR2 boundaries
+8. `fwr3_start`, `fwr3_end` - Framework 3 boundaries
 
-### Action Items
+**IMGT Position Numbering** (from spec FR-037b):
+- FWR1: positions 1-26
+- CDR1: positions 27-38
+- FWR2: positions 39-55
+- CDR2: positions 56-65
+- FWR3: positions 66-104
 
-- [ ] Read existing `src/sadie/germlines/builders/aux.py`
-- [ ] Review IgBLAST auxiliary file specifications
-- [ ] Document format requirements
+### Current Implementation Status
+
+The `AuxFileBuilder` in `aux.py` is currently a stub. Key methods that need completion:
+- `_parse_imgt_regions()` - Convert IMGT gaps to region boundaries
+- `_create_aux_entry()` - Generate actual aux file entries
+
+Output location: `igblast/aux_db/{scheme}/{species}_gl.aux`
 
 ---
 
 ## 5. IMGT/OGRDB Download URLs
 
-**Status**: NEEDS RESEARCH
+**Status**: PARTIALLY RESOLVED
 
 ### Question
 Current stable URLs for bulk FASTA downloads from IMGT and OGRDB?
 
-### IMGT (Preliminary)
+### IMGT
 
-- IMGT/GENE-DB: http://www.imgt.org/genedb/
-- Bulk download may require programmatic parsing
+- **IMGT/GENE-DB**: http://www.imgt.org/genedb/
+- **Reference Directory**: http://www.imgt.org/download/GENE-DB/
+- Bulk download requires programmatic parsing of HTML or FTP access
+- Current `download_imgt.py` is a stub with manual instructions
 
 ### OGRDB
 
-- API: https://ogrdb.airr-community.org/api/
-- FASTA downloads available per species/locus
+- **API Base**: https://ogrdb.airr-community.org/api/
+- **API Documentation**: https://ogrdb.airr-community.org/api/docs
+- FASTA downloads available per species/locus via API endpoints
+- Current `OGRDBProvider` reads pre-downloaded files
 
-### Action Items
+### VDJbase (from Section 1)
 
-- [ ] Document stable IMGT download URLs
-- [ ] Document OGRDB API endpoints for FASTA download
-- [ ] Test download scripts for reliability
+- **API Base**: https://vdjbase.org/admin/api/
+- **Sequences Endpoint**: `/repseq/sequences/{species}/{chain}`
+- Returns paginated JSON with sequence data
+- Manual FASTA download recommended (API pagination quirks)
+
+### Remaining Action Items
+
+- [ ] Implement automated IMGT download script
+- [ ] Implement automated OGRDB download script
 - [ ] Add retry/resume logic for large downloads
+- [ ] Test download scripts for reliability
 
 ---
 
@@ -274,13 +301,14 @@ Current stable URLs for bulk FASTA downloads from IMGT and OGRDB?
 | Research Question | Status | Priority |
 |-------------------|--------|----------|
 | VDJbase Data Format & Access | RESOLVED | - |
-| Biopython Alignment Strategy | PARTIAL | High |
-| G3 API Response Format | NEEDS RESEARCH | Medium |
-| IgBLAST Auxiliary File Format | NEEDS RESEARCH | Medium |
-| IMGT/OGRDB Download URLs | NEEDS RESEARCH | High |
+| Biopython Alignment Strategy | RESOLVED | - |
+| G3 API Response Format | RESOLVED | - |
+| IgBLAST Auxiliary File Format | RESOLVED | - |
+| IMGT/OGRDB Download URLs | PARTIALLY RESOLVED | Medium |
 
 ## Next Steps
 
-1. Complete remaining research items before implementation
-2. Update plan.md with any changes to approach
-3. Proceed to Phase 1 design artifacts once research complete
+1. ~~Complete remaining research items before implementation~~ **DONE** (mostly)
+2. Implement download scripts for IMGT and OGRDB
+3. Complete `AuxFileBuilder` stub with region parsing
+4. Proceed with implementation per tasks.md
