@@ -9,7 +9,7 @@
 
 ### Session 2026-01-08
 
-- Q: VDJbase Data Source & Format - Should VDJbase provider use API automation or manual FASTA approach? → A: Manual FASTA files with documented download instructions (API optional future enhancement)
+- Q: VDJbase Data Source & Format - Should VDJbase provider use API automation or manual FASTA approach? → A: API automation implemented with `VDJbaseProvider.download()` method; also supports manual FASTA files with documented download instructions
 - Q: Auto-Gapping Implementation Method - What tool/approach should be used for IMGT gapping of ungapped sequences? → A: Use Biopython alignment against IMGT-gapped templates (per-gene when available; fallback to per-segment consensus)
 - Q: G3 Migration Strategy & Timeline - Should G3 be removed immediately or phased out gradually? → A: Feature flag only (no automatic fallback) during validation, then deprecation after validation period
 - Q: Performance Monitoring & Observability - What level of logging/metrics should be implemented? → A: Basic logging (INFO/WARNING/ERROR) with timing metrics for rebuild operations
@@ -150,7 +150,8 @@ A new Sadie user wants to set up germlines module with standard IMGT and OGRDB d
 #### Data Population
 - **FR-005**: System MUST provide download scripts for IMGT data (`src/sadie/germlines/scripts/download_imgt.py`)
 - **FR-006**: System MUST provide download scripts for OGRDB data (`src/sadie/germlines/scripts/download_ogrdb.py`)
-- **FR-007**: VDJbase automated download script is optional future enhancement; manual download instructions covered by FR-010
+- **FR-006a**: OGRDB download script MUST fetch data from Zenodo archive (https://zenodo.org/records/18145568/files/ogrdb_archive.tgz) and extract sequences from SQL dump's `gene_description` table, outputting both ungapped (`IG{chain}{segment}.fasta`) and gapped (`IG{chain}{segment}_gapped.fasta`) FASTA files
+- **FR-007**: VDJbase automated download is implemented via `VDJbaseProvider.download()` method; manual download instructions also available per FR-010
 - **FR-008**: Download scripts MUST support species parameter (e.g., `--species human mouse`)
 - **FR-009**: Download scripts MUST validate downloaded data (valid FASTA, expected file structure)
 - **FR-009a**: Valid FASTA validation MUST check: (1) file contains at least one header line starting with ">", (2) sequences contain only valid nucleotides (ACGT) or IUPAC ambiguity codes (RYSWKMBDHVN), (3) no empty sequences, (4) headers contain parseable gene identifiers

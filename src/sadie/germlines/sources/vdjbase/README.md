@@ -13,8 +13,10 @@ VDJbase provides germline sequences discovered through repertoire sequencing and
 
 | Species | Internal Name | Datasets |
 |---------|---------------|----------|
-| Human | `human` | IGH, IGK, IGL |
+| Human | `human` | IGH, IGK, IGL, IGHC |
 | Rhesus Macaque | `rhesus_macaque` | IGH, IGK, IGL |
+
+**Note**: VDJbase currently only offers Human and Rhesus Macaque data. Mouse is not available (check `provider.get_available_species()` for updates).
 
 ## Automatic Download
 

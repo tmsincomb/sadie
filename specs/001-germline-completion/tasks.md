@@ -8,8 +8,8 @@
 
 This document breaks down the implementation into actionable tasks organized by user story. Each user story phase is independently testable and delivers incremental value.
 
-**Total Tasks**: 59 (plus 2 backlog)
-**Parallelizable Tasks**: 28
+**Total Tasks**: 60 (plus 2 backlog)
+**Parallelizable Tasks**: 29
 **User Stories**: 6 (4 × P1, 2 × P2)
 **Estimated Duration**: 24-28 hours
 
@@ -73,9 +73,13 @@ Phase 8 (Polish)
 - [ ] T003 [P] Create test data directory structure in src/sadie/germlines/tests/data/{provider}/{species}/ (custom/, imgt/, ogrdb/, vdjbase/ with human/)
 - [ ] T004 [P] Create curated test dataset with 5-10 genes per segment in src/sadie/germlines/tests/data/{provider}/human/
 - [ ] T004a [P] Create FR-025b regression test sequences (IGHV1-69*01, IGHV3-23*01, IGHD3-3*01, IGHJ4*01) in src/sadie/germlines/tests/data/regression/
+- [ ] T004b [P] Create G3 regression test comparing germlines module output vs expected G3 format for FR-025b sequences in src/sadie/germlines/tests/test_g3_regression.py
 - [ ] T005 Create validation script template in src/sadie/germlines/scripts/validate.py
 - [ ] T006 Update pyproject.toml to ensure all dependencies listed (BioPython, pytest)
 - [ ] T007 Create feature flag utility module in src/sadie/germlines/utils/feature_flags.py
+- [ ] T096 Create research.md (Phase 0 deliverable) in specs/001-germline-completion/research.md per plan
+- [ ] T097 Create data-model.md (Phase 1 deliverable) in specs/001-germline-completion/data-model.md per plan
+- [ ] T098 Create quickstart.md (Phase 1 deliverable) in specs/001-germline-completion/quickstart.md per plan
 
 ---
 
@@ -90,13 +94,16 @@ Phase 8 (Polish)
 ### Foundational Tasks
 
 - [ ] T008 Implement feature flag function `use_germlines_module()` in src/sadie/germlines/utils/feature_flags.py
-- [ ] T009 [P] Implement auto-gapping service using BioPython alignment against IMGT-gapped templates (per-gene fallback to per-segment consensus) in src/sadie/germlines/builders/gapper.py
+- [X] T009 [P] Implement auto-gapping service using BioPython alignment against IMGT-gapped templates (per-gene fallback to per-segment consensus) in src/sadie/germlines/builders/gapper.py
 - [ ] T010 [P] Add logging configuration for germlines module in src/sadie/germlines/__init__.py
-- [ ] T011 [P] Update GermlineManager to support vdjbase provider in src/sadie/germlines/manager.py
+- [X] T011 [P] Update GermlineManager to support vdjbase provider in src/sadie/germlines/manager.py
 - [X] T012 Create VDJbase provider stub with base interface in src/sadie/germlines/providers/vdjbase.py
 - [X] T013 Implement VDJbase FASTA parsing logic in src/sadie/germlines/providers/vdjbase.py
 - [X] T014 Implement VDJbase provider metadata methods in src/sadie/germlines/providers/vdjbase.py
 - [ ] T015 Add timing metrics logging to pipeline.py in src/sadie/germlines/pipeline.py
+- [ ] T091 [P] Ensure normalized outputs follow FR-022/022a/023 (normalized/{species}/gapped|ungapped; D segments ungapped-only) and add tests validating paths/content
+- [ ] T094 [P] Gap amino-acid then back-map to nucleotide per FR-021b in src/sadie/germlines/builders/gapper.py; add acceptance test for codon-aware gaps
+- [ ] T095 [P] Reuse existing pipeline utilities (no duplicated gapping/build logic) and add tests validating normalized layout per FR-024
 
 ---
 
@@ -112,14 +119,14 @@ Phase 8 (Polish)
 
 ### US1 Tasks
 
-- [ ] T016 [US1] Verify custom provider handles new sequences in src/sadie/germlines/providers/custom.py
+- [X] T016 [US1] Verify custom provider handles new sequences in src/sadie/germlines/providers/custom.py (integrated GapperService for auto-gapping)
 - [ ] T017 [US1] Implement change detection for custom sequences in src/sadie/germlines/pipeline.py
 - [ ] T018 [US1] Add validation for custom FASTA files (nucleotides, format) in src/sadie/germlines/providers/custom.py
 - [ ] T019 [US1] Implement auto-rebuild trigger on custom file change in src/sadie/germlines/pipeline.py
 - [ ] T020 [P] [US1] Write unit test for custom sequence priority in src/sadie/germlines/tests/test_custom_provider.py
 - [ ] T021 [P] [US1] Write integration test for custom sequence end-to-end in src/sadie/germlines/tests/test_integration.py
-- [ ] T022 [US1] Add logging for custom sequence load events in src/sadie/germlines/providers/custom.py
-- [ ] T023 [US1] Document custom sequence addition process in src/sadie/germlines/sources/custom/README.md
+- [X] T022 [US1] Add logging for custom sequence load events in src/sadie/germlines/providers/custom.py
+- [X] T023 [US1] Document custom sequence addition process in src/sadie/germlines/sources/custom/README.md
 
 **Acceptance Criteria**:
 - [ ] User can add novel IGHV to src/sadie/germlines/sources/custom/human/IGHV.fasta
@@ -141,17 +148,19 @@ Phase 8 (Polish)
 
 ### US6 Tasks
 
-- [ ] T024 [US6] Complete IMGT download script implementation in src/sadie/germlines/scripts/download_imgt.py
-- [ ] T025 [US6] Add species parameter support to IMGT download script in src/sadie/germlines/scripts/download_imgt.py
+- [X] T024 [US6] Complete IMGT download script implementation in src/sadie/germlines/scripts/download_imgt.py
+- [X] T025 [US6] Add species parameter support to IMGT download script in src/sadie/germlines/scripts/download_imgt.py
 - [ ] T026 [US6] Implement resume capability for IMGT downloads in src/sadie/germlines/scripts/download_imgt.py
-- [ ] T027 [US6] Implement OGRDB download script in src/sadie/germlines/scripts/download_ogrdb.py
-- [ ] T028 [US6] Add species parameter support to OGRDB download script in src/sadie/germlines/scripts/download_ogrdb.py
+- [X] T027 [US6] Implement OGRDB download script in src/sadie/germlines/scripts/download_ogrdb.py
+- [X] T028 [US6] Add species parameter support to OGRDB download script in src/sadie/germlines/scripts/download_ogrdb.py
 - [ ] T029 [US6] Implement validation for downloaded FASTA files in src/sadie/germlines/scripts/validate.py
 - [X] T030 [P] [US6] Create VDJbase manual download instructions in src/sadie/germlines/sources/vdjbase/README.md
-- [ ] T031 [P] [US6] Update IMGT data documentation in src/sadie/germlines/sources/imgt/IMGT_DATA.md
-- [ ] T032 [P] [US6] Update OGRDB data documentation in src/sadie/germlines/sources/ogrdb/OGRDB_DATA.md
-- [ ] T033 [US6] Add progress indicators to download scripts (INFO logging) in src/sadie/germlines/scripts/download_imgt.py
-- [ ] T034 [US6] Add timing metrics to download scripts in src/sadie/germlines/scripts/download_ogrdb.py
+- [X] T031 [P] [US6] Update IMGT data documentation in src/sadie/germlines/sources/imgt/IMGT_DATA.md
+- [X] T032 [P] [US6] Update OGRDB data documentation in src/sadie/germlines/sources/ogrdb/OGRDB_DATA.md
+- [X] T033 [US6] Add progress indicators to download scripts (INFO logging) in src/sadie/germlines/scripts/download_imgt.py
+- [X] T034 [US6] Add timing metrics to download scripts in src/sadie/germlines/scripts/download_ogrdb.py
+- [ ] T090 [US6] Implement resume capability for OGRDB downloads in src/sadie/germlines/scripts/download_ogrdb.py (checkpoint file; idempotent retries)
+- [ ] T093 [P] [US6] Standardize progress logging cadence to INFO every 10 files in IMGT/OGRDB download scripts ("Downloaded {completed}/{total} files ({percentage}%)")
 
 **Acceptance Criteria**:
 - [ ] User runs `python src/sadie/germlines/scripts/download_imgt.py human` and gets validated FASTA files
@@ -258,7 +267,7 @@ Phase 8 (Polish)
 ### US5 Tasks
 
 - [X] T057 [P] [US5] Complete VDJbase provider implementation in src/sadie/germlines/providers/vdjbase.py
-- [ ] T058 [P] [US5] Add VDJbase to default provider list in src/sadie/germlines/manager.py (partially done - exports added to __init__.py)
+- [X] T058 [P] [US5] Add VDJbase to default provider list in src/sadie/germlines/manager.py (verified: manager.py DEFAULT_PROVIDERS includes vdjbase, __init__.py exports VDJbaseProvider, data exists for human/rhesus_macaque)
 - [ ] T059 [P] [US5] Write unit tests for VDJbase provider in src/sadie/germlines/tests/test_vdjbase_provider.py
 - [ ] T060 [P] [US5] Create VDJbase test data in src/sadie/germlines/tests/data/vdjbase/human/
 - [ ] T061 [US5] Test VDJbase in priority ordering in src/sadie/germlines/tests/test_priority_ordering.py
@@ -297,6 +306,7 @@ Phase 8 (Polish)
 - [ ] T075 Add performance profiling for critical paths in src/sadie/germlines/pipeline.py
 - [ ] T076 Run pre-commit hooks and fix any linting issues
 - [ ] T077 Update CHANGELOG or release notes with germlines module completion
+- [ ] T099 Benchmark rebuild time (<2 minutes for human dataset) and record timing logs to satisfy SC-001/SC-011 in specs/001-germline-completion/validation-tracking.md
 
 ### Supplemental Tasks (Added 2026-01-15)
 
@@ -310,9 +320,12 @@ The following tasks were added after initial task generation to address IgBLAST 
 - [ ] T083 [P] Standardize error message templates per FR-036a/FR-036b in src/sadie/germlines/providers/*.py and src/sadie/germlines/builders/blast.py
 - [ ] T084 [P] Add legacy GermlineData API compatibility tests in src/sadie/germlines/tests/test_germline_data_legacy.py
 - [ ] T085 [P] Add regression tests comparing germlines vs G3 output in src/sadie/germlines/tests/test_g3_regression.py
-- [ ] T086 [P] Replace .specify/memory/constitution.md placeholder with actual constitution text
+- [X] T086 [P] Replace .specify/memory/constitution.md placeholder with actual constitution text
 - [ ] T087 [US4] Create validation period tracking document at specs/001-germline-completion/validation-tracking.md with: start date, release count, bug tracker, performance baseline comparison template
 - [ ] T088 [US4] Add deprecation warning log when SADIE_USE_GERMLINES_MODULE=false: "G3 API is deprecated. Set SADIE_USE_GERMLINES_MODULE=true. G3 will be removed after {date}."
+- [ ] T089 [P] [US6] Verify OGRDB provider correctly loads _gapped.fasta files alongside ungapped files in src/sadie/germlines/providers/ogrdb.py
+- [ ] T092 [US4] Enforce validation period per FR-017a/b: track start/end, release counts, success criteria, and deprecation notice schedule; log metrics and update validation-tracking.md
+- [ ] T100 [P] Consolidate G3 regression parity into a single test at src/sadie/germlines/tests/test_g3_regression.py (supersedes T004b and T085)
 
 ### Backlog (Post-Validation Period)
 
@@ -332,12 +345,14 @@ These tasks execute after validation period success criteria (FR-017b) are met:
 
 **Phase 2 Foundational**:
 - T009 (gapper), T010 (logging), T011 (manager update), T015 (timing) - all parallel
+- New: T091 (normalized outputs), T094 (AA→codon gapping), T095 (utility reuse) can run in parallel with T009/T015
 
 **Phase 3 US1**:
 - T020, T021 (tests) parallel with T023 (docs)
 
 **Phase 4 US6**:
 - T030, T031, T032 (documentation) - all parallel
+- New: T090 (OGRDB resume) and T093 (logging cadence) parallel with T026 (IMGT resume)
 
 **Phase 7 (Independent Stories)**:
 - US3 (T052-T056) and US5 (T057-T063) can be done in parallel
@@ -347,7 +362,7 @@ These tasks execute after validation period success criteria (FR-017b) are met:
 ```
 Developer 1: US1 → US2 → US4
 Developer 2: US6 → US3 → US5
-Developer 3: Phase 1 → Phase 2 → Phase 8 (support + polish)
+ Developer 3: Phase 1 → Phase 2 → Phase 8 (support + polish; owns T096-T098 deliverables and T099 benchmark)
 ```
 
 ---
