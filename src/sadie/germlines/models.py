@@ -11,7 +11,7 @@ Design Principles:
 - Source tracking for provenance
 """
 
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, Any
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 

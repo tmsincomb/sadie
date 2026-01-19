@@ -76,7 +76,7 @@ Phase 8 (Polish)
 - [ ] T004b [P] Create G3 regression test comparing germlines module output vs expected G3 format for FR-025b sequences in src/sadie/germlines/tests/test_g3_regression.py
 - [ ] T005 Create validation script template in src/sadie/germlines/scripts/validate.py
 - [ ] T006 Update pyproject.toml to ensure all dependencies listed (BioPython, pytest)
-- [ ] T007 Create feature flag utility module in src/sadie/germlines/utils/feature_flags.py
+- [X] T007 Create feature flag utility module in src/sadie/germlines/utils/feature_flags.py
 - [ ] T096 Create research.md (Phase 0 deliverable) in specs/001-germline-completion/research.md per plan
 - [ ] T097 Create data-model.md (Phase 1 deliverable) in specs/001-germline-completion/data-model.md per plan
 - [ ] T098 Create quickstart.md (Phase 1 deliverable) in specs/001-germline-completion/quickstart.md per plan
@@ -93,7 +93,7 @@ Phase 8 (Polish)
 
 ### Foundational Tasks
 
-- [ ] T008 Implement feature flag function `use_germlines_module()` in src/sadie/germlines/utils/feature_flags.py
+- [X] T008 Implement feature flag function `use_germlines_module()` in src/sadie/germlines/utils/feature_flags.py
 - [X] T009 [P] Implement auto-gapping service using BioPython alignment against IMGT-gapped templates (per-gene fallback to per-segment consensus) in src/sadie/germlines/builders/gapper.py
 - [ ] T010 [P] Add logging configuration for germlines module in src/sadie/germlines/__init__.py
 - [X] T011 [P] Update GermlineManager to support vdjbase provider in src/sadie/germlines/manager.py
