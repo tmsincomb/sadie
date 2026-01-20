@@ -2,10 +2,16 @@
 
 import os
 import pytest
-from sadie.germlines.utils.feature_flags import use_germlines_module
+from sadie.germlines.utils.feature_flags import use_germlines_module, clear_feature_flag_cache
 
 
 class TestUseGermlinesModule:
+    @pytest.fixture(autouse=True)
+    def clear_cache(self):
+        """Clear the feature flag cache before each test."""
+        clear_feature_flag_cache()
+        yield
+        clear_feature_flag_cache()
     """Test suite for use_germlines_module() feature flag function."""
 
     def test_default_behavior_returns_true(self, monkeypatch):
@@ -50,7 +56,7 @@ class TestUseGermlinesModule:
         use_germlines_module()
 
         # Check that warning was logged
-        assert any("G3 API mode is active" in record.message for record in caplog.records)
+        assert any("G3 API is deprecated" in record.message for record in caplog.records)
         assert any("deprecated" in record.message.lower() for record in caplog.records)
 
     def test_no_warning_when_true(self, monkeypatch, caplog):
@@ -73,12 +79,14 @@ class TestUseGermlinesModule:
         assert result1 == result2 == result3 == True
 
     def test_env_var_changes_between_calls(self, monkeypatch):
-        """Test that changing env var between calls updates behavior."""
+        """Test that changing env var between calls updates behavior after cache clear."""
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
         assert use_germlines_module() is True
 
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "false")
+        clear_feature_flag_cache()
         assert use_germlines_module() is False
 
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        clear_feature_flag_cache()
         assert use_germlines_module() is True

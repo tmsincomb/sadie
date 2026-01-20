@@ -11,24 +11,24 @@ class TestPriorityOrdering:
         for provider in ["custom", "imgt", "ogrdb", "vdjbase"]:
             (sources / provider / "human").mkdir(parents=True)
 
-        imgt_v = """>IGHV1-69*01|Homo sapiens|F
-CAGGTGCAGCTGGTGCAGTCTGGGGCTIMGT
->IGHV1-2*01|Homo sapiens|F
-CAGGTGCAGCTGGTGCAGTCTGGGGCTIMGTONLY
+        imgt_v = """>X00001|IGHV1-69*01|Homo sapiens|F|V-REGION
+CAGGTGCAGCTGGTGCAGTCTGGGGCTAAAA
+>X00002|IGHV1-2*01|Homo sapiens|F|V-REGION
+CAGGTGCAGCTGGTGCAGTCTGGGGCTTTTT
 """
         (sources / "imgt" / "human" / "IGHV.fasta").write_text(imgt_v)
         (sources / "imgt" / "human" / "IGHV_gapped.fasta").write_text(imgt_v)
 
-        ogrdb_v = """>IGHV1-69*01|Homo sapiens|F
-CAGGTGCAGCTGGTGCAGTCTGGGGCTOGRDB
->IGHV-OGRDB-NOVEL*01|Homo sapiens|F
-CAGGTGCAGCTGGTGCAGTCTGGGGCTOGRDBNOVEL
+        ogrdb_v = """>IGHV1-69*01
+CAGGTGCAGCTGGTGCAGTCTGGGGCTCCCC
+>IGHV-OGRDB-NOVEL*01
+CAGGTGCAGCTGGTGCAGTCTGGGGCTACAC
 """
         (sources / "ogrdb" / "human" / "IGHV.fasta").write_text(ogrdb_v)
         (sources / "ogrdb" / "human" / "IGHV_gapped.fasta").write_text(ogrdb_v)
 
-        custom_v = """>IGHV1-69*01|Homo sapiens|F
-CAGGTGCAGCTGGTGCAGTCTGGGGCTCUSTOM
+        custom_v = """>IGHV1-69*01
+CAGGTGCAGCTGGTGCAGTCTGGGGCTGGGG
 """
         (sources / "custom" / "human" / "IGHV.fasta").write_text(custom_v)
 
@@ -55,9 +55,9 @@ CAGGTGCAGCTGGTGCAGTCTGGGGCTCUSTOM
         assert ogrdb_69 is not None
         assert imgt_69 is not None
 
-        assert "CUSTOM" in custom_69.sequence
-        assert "OGRDB" in ogrdb_69.sequence
-        assert "IMGT" in imgt_69.sequence
+        assert custom_69.sequence.endswith("GGGG")
+        assert ogrdb_69.sequence.endswith("CCCC")
+        assert imgt_69.sequence.endswith("AAAA")
 
     def test_same_name_different_sequence_uses_higher_priority(self, priority_env):
         from sadie.germlines.providers.custom import CustomProvider
@@ -113,15 +113,15 @@ CAGGTGCAGCTGGTGCAGTCTGGGGCTCUSTOM
         (sources / "imgt" / "human").mkdir(parents=True)
         (sources / "ogrdb" / "human").mkdir(parents=True)
 
-        same_seq = "CAGGTGCAGCTGGTGCAGTCTGGGGCTSAME"
+        same_seq = "CAGGTGCAGCTGGTGCAGTCTGGGGCTAACC"
 
-        imgt_v = f""">IGHV1-69*01|Homo sapiens|F
+        imgt_v = f""">X00001|IGHV1-69*01|Homo sapiens|F|V-REGION
 {same_seq}
 """
         (sources / "imgt" / "human" / "IGHV.fasta").write_text(imgt_v)
         (sources / "imgt" / "human" / "IGHV_gapped.fasta").write_text(imgt_v)
 
-        ogrdb_v = f""">IGHV1-69*01|Homo sapiens|F
+        ogrdb_v = f""">IGHV1-69*01
 {same_seq}
 """
         (sources / "ogrdb" / "human" / "IGHV.fasta").write_text(ogrdb_v)

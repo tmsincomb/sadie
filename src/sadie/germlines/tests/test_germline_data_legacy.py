@@ -17,7 +17,7 @@ class TestGermlineDataLegacyAPI:
         (tmp_path / "Ig/blastdb/human/human_D.nin").write_text("")
         (tmp_path / "Ig/blastdb/human/human_J.nhr").write_text("")
         (tmp_path / "Ig/blastdb/human/human_J.nin").write_text("")
-        (tmp_path / "aux_db/imgt/human_gl.aux").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "aux_db/imgt").mkdir(parents=True, exist_ok=True)
         (tmp_path / "aux_db/imgt/human_gl.aux").write_text("dummy aux data")
         (tmp_path / "Ig/internal_data/human").mkdir(parents=True)
 

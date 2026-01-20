@@ -11,11 +11,11 @@ class TestVDJbaseProvider:
         vdjbase_dir.mkdir(parents=True)
 
         fasta = """>IGHV1-69*01|VDJbase
-CAGGTGCAGCTGGTGCAGTCTGGGGCTVDJBASE
+CAGGTGCAGCTGGTGCAGTCTGGGGCTAAAA
 >IGHV1-69*02|VDJbase
-CAGGTGCAGCTGGTGCAGTCTGGGGCTVDJBASE02
+CAGGTGCAGCTGGTGCAGTCTGGGGCTAACC
 >IGHV-VDJBASE-NOVEL*01|VDJbase
-CAGGTGCAGCTGGTGCAGTCTGGGGCTVDJBASENOVEL
+CAGGTGCAGCTGGTGCAGTCTGGGGCTCCCC
 """
         (vdjbase_dir / "IGHV.fasta").write_text(fasta)
 
@@ -62,7 +62,7 @@ ACTACTTTGACTACTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG
 
         assert gene is not None
         assert "IGHV1-69*01" in gene.name
-        assert "VDJBASE" in gene.sequence
+        assert gene.sequence.endswith("AAAA")
 
     def test_fetch_gene_by_name_not_found(self, vdjbase_env):
         from sadie.germlines.providers.vdjbase import VDJbaseProvider
@@ -111,12 +111,12 @@ class TestVDJbaseInPriority:
         (sources / "imgt" / "human").mkdir(parents=True)
 
         vdjbase_v = """>IGHV1-69*01|VDJbase
-CAGGTGCAGCTGGTGCAGTCTGGGGCTVDJBASE
+CAGGTGCAGCTGGTGCAGTCTGGGGCTGGGG
 """
         (sources / "vdjbase" / "human" / "IGHV.fasta").write_text(vdjbase_v)
 
-        imgt_v = """>IGHV1-69*01|IMGT
-CAGGTGCAGCTGGTGCAGTCTGGGGCTIMGT
+        imgt_v = """>X00001|IGHV1-69*01|Homo sapiens|F|V-REGION
+CAGGTGCAGCTGGTGCAGTCTGGGGCTAAAA
 """
         (sources / "imgt" / "human" / "IGHV.fasta").write_text(imgt_v)
         (sources / "imgt" / "human" / "IGHV_gapped.fasta").write_text(imgt_v)
@@ -138,5 +138,5 @@ CAGGTGCAGCTGGTGCAGTCTGGGGCTIMGT
 
         assert vdjbase_69 is not None
         assert imgt_69 is not None
-        assert "VDJBASE" in vdjbase_69.sequence
-        assert "IMGT" in imgt_69.sequence
+        assert vdjbase_69.sequence.endswith("GGGG")
+        assert imgt_69.sequence.endswith("AAAA")

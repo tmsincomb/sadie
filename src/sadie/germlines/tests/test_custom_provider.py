@@ -118,12 +118,12 @@ class TestCustomProviderPriority:
         imgt_dir.mkdir(parents=True)
 
         custom_fasta = """>IGHV1-SHARED*01
-CAGGTGCAGCTGGTGCAGTCTGGGGCTCUSTOM
+CAGGTGCAGCTGGTGCAGTCTGGGGCTAAAA
 """
         (custom_dir / "IGHV.fasta").write_text(custom_fasta)
 
         imgt_fasta = """>IGHV1-SHARED*01
-CAGGTGCAGCTGGTGCAGTCTGGGGCTIMGT
+CAGGTGCAGCTGGTGCAGTCTGGGGCTTTTT
 >IGHV1-IMGTONLY*01
 CAGGTGCAGCTGGTGCAGTCTGGGGCT
 """
@@ -146,5 +146,5 @@ CAGGTGCAGCTGGTGCAGTCTGGGGCT
 
         assert custom_shared is not None
         assert imgt_shared is not None
-        assert "CUSTOM" in custom_shared.sequence
-        assert "IMGT" in imgt_shared.sequence
+        assert custom_shared.sequence.endswith("AAAA")
+        assert imgt_shared.sequence.endswith("TTTT")

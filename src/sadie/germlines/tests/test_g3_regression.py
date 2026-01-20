@@ -33,27 +33,27 @@ def germline_manager():
     return GermlineManager(providers=["imgt"])
 
 def test_germlines_returns_ighv1_69(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHV")
+    genes = germline_manager.get_genes("human", "V", "H")
     gene_names = [g.name for g in genes]
     assert any("IGHV1-69" in name for name in gene_names)
 
 def test_germlines_returns_ighv3_23(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHV")
+    genes = germline_manager.get_genes("human", "V", "H")
     gene_names = [g.name for g in genes]
     assert any("IGHV3-23" in name for name in gene_names)
 
 def test_germlines_returns_ighd3_3(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHD")
+    genes = germline_manager.get_genes("human", "D", "H")
     gene_names = [g.name for g in genes]
     assert any("IGHD3-3" in name for name in gene_names)
 
 def test_germlines_returns_ighj4(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHJ")
+    genes = germline_manager.get_genes("human", "J", "H")
     gene_names = [g.name for g in genes]
     assert any("IGHJ4" in name for name in gene_names)
 
 def test_sequence_identity_ighv1_69(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHV")
+    genes = germline_manager.get_genes("human", "V", "H")
     ighv1_69 = next((g for g in genes if "IGHV1-69*01" in g.name), None)
     assert ighv1_69 is not None
     expected_start = "caggtgcagctggtgcagtctggggct"
@@ -61,7 +61,7 @@ def test_sequence_identity_ighv1_69(germline_manager):
     assert actual.startswith(expected_start)
 
 def test_sequence_identity_ighj4(germline_manager):
-    genes = germline_manager.fetch_genes("human", "IGHJ")
+    genes = germline_manager.get_genes("human", "J", "H")
     ighj4 = next((g for g in genes if "IGHJ4*01" in g.name), None)
     assert ighj4 is not None
     expected = "actactttgactactggggccaaggaaccctggtcaccgtctcctcag"

@@ -57,7 +57,7 @@ GGTACAACTGGAACGAC
         from sadie.germlines.providers.imgt import IMGTProvider
 
         custom_fasta = """>IGHV1-18*01
-CAGGTTCAGCTGGTGCAGTCTGGAGCTCUSTOM
+CAGGTTCAGCTGGTGCAGTCTGGAGCTAAAA
 """
         (integration_env["sources"] / "custom" / "human" / "IGHV.fasta").write_text(custom_fasta)
 
@@ -72,14 +72,14 @@ CAGGTTCAGCTGGTGCAGTCTGGAGCTCUSTOM
 
         assert custom_v18 is not None
         assert imgt_v18 is not None
-        assert "CUSTOM" in custom_v18.sequence
-        assert "CUSTOM" not in imgt_v18.sequence
+        assert custom_v18.sequence.endswith("AAAA")
+        assert not imgt_v18.sequence.endswith("AAAA")
 
     def test_novel_custom_sequence_included(self, integration_env):
         from sadie.germlines.providers.custom import CustomProvider
 
         custom_fasta = """>IGHV-NOVEL*01
-CAGGTGCAGCTGGTGCAGTCTGGGGCTNOVEL
+CAGGTGCAGCTGGTGCAGTCTGGGGCTGGGGG
 """
         (integration_env["sources"] / "custom" / "human" / "IGHV.fasta").write_text(custom_fasta)
 
