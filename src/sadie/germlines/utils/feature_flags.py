@@ -7,14 +7,14 @@ to the local germlines module, following Constitution Principle V (Integration C
 
 import os
 import logging
-from typing import Literal
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
+SADIE_USE_GERMLINES_MODULE = "SADIE_USE_GERMLINES_MODULE"
 
-FeatureFlagValue = Literal["true", "false"]
 
-
+@lru_cache(maxsize=1)
 def use_germlines_module() -> bool:
     """
     Determine whether to use the germlines module or fall back to G3 API.
@@ -34,43 +34,25 @@ def use_germlines_module() -> bool:
         - "true" -> Use germlines module exclusively (no G3 API calls)
         - "false" -> Use G3 API exclusively (for rollback during validation period only)
 
-    Examples:
-        >>> # Default behavior (germlines module)
-        >>> use_germlines_module()
-        True
-
-        >>> # Explicit germlines module
-        >>> os.environ["SADIE_USE_GERMLINES_MODULE"] = "true"
-        >>> use_germlines_module()
-        True
-
-        >>> # Rollback to G3 (validation period only)
-        >>> os.environ["SADIE_USE_GERMLINES_MODULE"] = "false"
-        >>> use_germlines_module()
-        False
-
     Notes:
         - No automatic fallback implemented
         - G3 fallback is only for validation period
         - After validation period, G3 dependencies will be removed
     """
-    flag_value = os.getenv("SADIE_USE_GERMLINES_MODULE", "true").lower()
-
-    # Log deprecation warning when using G3 fallback
-    if flag_value == "false":
+    env_value = os.environ.get(SADIE_USE_GERMLINES_MODULE, "true").lower()
+    use_germlines = env_value in ("true", "1", "yes", "on")
+    if not use_germlines:
         logger.warning(
-            "G3 API mode is active (SADIE_USE_GERMLINES_MODULE=false). "
-            "This is only supported during the validation period. "
-            "G3 API will be deprecated and removed in a future release. "
-            "Please report any issues with germlines module and prepare to migrate."
+            "G3 API is deprecated. Set SADIE_USE_GERMLINES_MODULE=true. "
+            "G3 will be removed after 2026-06-01."
         )
-
-    # Parse flag value (case-insensitive)
-    use_germlines = flag_value in ("true", "1", "yes", "on")
-
     logger.debug(
-        f"Feature flag SADIE_USE_GERMLINES_MODULE={flag_value} -> "
+        f"Feature flag SADIE_USE_GERMLINES_MODULE={env_value} -> "
         f"use_germlines={use_germlines}"
     )
-
     return use_germlines
+
+
+def clear_feature_flag_cache():
+    """Clear the cached feature flag value to allow re-evaluation."""
+    use_germlines_module.cache_clear()

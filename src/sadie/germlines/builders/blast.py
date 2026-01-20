@@ -154,6 +154,7 @@ class BlastDBBuilder:
                 "-in", str(fasta_path),
                 "-out", str(fasta_path.with_suffix("")),
                 "-parse_seqids",
+                "-hash_index",
             ]
 
             logger.debug(f"Running: {' '.join(cmd)}")

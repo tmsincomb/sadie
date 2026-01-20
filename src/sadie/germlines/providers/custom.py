@@ -39,6 +39,22 @@ from ..builders.gapper import GapperService
 
 logger = logging.getLogger(__name__)
 
+VALID_NUCLEOTIDES = set("ACGTNacgtn.")
+IUPAC_AMBIGUOUS = set("RYSWKMBDHVryswkmbdhv-")
+
+
+def _validate_sequence(sequence: str, gene_name: str) -> tuple[bool, str]:
+    if not sequence:
+        return False, f"Empty sequence for {gene_name}"
+    clean_seq = sequence.replace(".", "").replace("-", "")
+    if not clean_seq:
+        return False, f"Sequence contains only gap characters for {gene_name}"
+    valid_chars = VALID_NUCLEOTIDES | IUPAC_AMBIGUOUS
+    invalid = set(sequence) - valid_chars
+    if invalid:
+        return False, f"Invalid characters in {gene_name}: {invalid}"
+    return True, ""
+
 
 class CustomProvider(GermlineProvider):
     """
@@ -234,10 +250,14 @@ class CustomProvider(GermlineProvider):
             Gene object if successful
         """
         sequence = str(record.seq).upper()
-        is_gapped = "." in sequence or "-" in sequence
-
-        # Clean gene name
         gene_name = self._clean_gene_name(record.id, segment, chain)
+
+        valid, error_msg = _validate_sequence(sequence, gene_name)
+        if not valid:
+            logger.warning(f"Skipping invalid sequence: {error_msg}")
+            return None
+
+        is_gapped = "." in sequence or "-" in sequence
 
         # Determine gapped/ungapped versions
         if is_gapped:

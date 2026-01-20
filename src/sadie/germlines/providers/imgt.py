@@ -184,13 +184,14 @@ class IMGTProvider(GermlineProvider):
             Gene object if successful
         """
         # Parse header
+        # IMGT format: >ACCESSION|GENE_NAME|SPECIES|FUNCTIONALITY|REGION|...
         header_parts = record.id.split("|")
-        gene_name = header_parts[0]
+        gene_name = header_parts[1] if len(header_parts) > 1 else header_parts[0]
 
-        # Extract functionality if present
+        # Extract functionality if present (index 3 in IMGT format)
         functionality = "F"  # Default to functional
-        if len(header_parts) > 2:
-            functionality = header_parts[2]
+        if len(header_parts) > 3:
+            functionality = header_parts[3]
 
         # Get sequence
         sequence_gapped = str(record.seq).upper()

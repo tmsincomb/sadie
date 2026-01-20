@@ -33,6 +33,7 @@ Output Directory Structure:
 """
 
 import argparse
+import json
 import logging
 import os
 import re
@@ -43,12 +44,28 @@ import sys
 import tarfile
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.request import urlretrieve
 from urllib.error import URLError
 
 logger = logging.getLogger(__name__)
+
+CHECKPOINT_FILE = ".download_progress.json"
+
+
+def _load_checkpoint(checkpoint_path: Path) -> dict:
+    if checkpoint_path.exists():
+        try:
+            return json.loads(checkpoint_path.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_checkpoint(checkpoint_path: Path, data: dict):
+    checkpoint_path.write_text(json.dumps(data, indent=2))
 
 # Zenodo archive URL
 ZENODO_ARCHIVE_URL = "https://zenodo.org/records/18145568/files/ogrdb_archive.tgz?download=1"

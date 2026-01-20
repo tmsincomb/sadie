@@ -1,13 +1,31 @@
 from __future__ import annotations
 
+import logging
 import warnings
 from pathlib import Path
 from typing import Optional, Set
 
 from sadie.airr.igblast.igblast import ensure_prefix_to
-
-# package/module level
 from sadie.reference import YamlRef
+
+logger = logging.getLogger(__name__)
+
+
+def _use_germlines_module() -> bool:
+    import os
+    env_value = os.environ.get("SADIE_USE_GERMLINES_MODULE", "true").lower()
+    use_germlines = env_value in ("true", "1", "yes")
+    if not use_germlines:
+        logger.warning(
+            "G3 API is deprecated. Set SADIE_USE_GERMLINES_MODULE=true. "
+            "G3 will be removed after 2026-06-01."
+        )
+    return use_germlines
+
+
+def _get_germlines_igblast_dir() -> Path:
+    from sadie.germlines import get_germlines_base_dir
+    return get_germlines_base_dir() / "igblast"
 
 
 class GermlineData:

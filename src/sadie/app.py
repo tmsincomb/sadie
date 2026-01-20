@@ -499,7 +499,6 @@ def make_all(
         click.echo("\n" + "=" * 60)
         click.echo("STEP 3: Regenerating CATNAP references")
         click.echo("=" * 60)
-        from pathlib import Path
 
         script_path = Path(__file__).parent.parent.parent / "scripts" / "regenerate_catnap_references.py"
         if script_path.exists():
