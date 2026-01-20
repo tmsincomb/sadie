@@ -32,10 +32,10 @@ Once installed, run: `python -c "from sadie.germlines import update_databases; u
 ## Task Progress
 
 - **Total Tasks**: 51
-- **Completed**: 24 (47%)
-- **In Progress**: 1
-- **Blocked**: 3 (requires BLAST+ installation)
-- **Remaining**: 23 (45%)
+- **Completed**: 34 (67%)
+- **In Progress**: 0
+- **Blocked**: 3 (requires gapped AA sequences for LocalHMMBuilder)
+- **Remaining**: 14 (27%)
 
 ---
 
@@ -81,9 +81,9 @@ Once installed, run: `python -c "from sadie.germlines import update_databases; u
 - [x] T009 [P] [US1] Update GermlineData.__init__() in src/sadie/airr/igblast/germline.py with feature flag check
 - [x] T010 [P] [US1] Add germlines module path logic to GermlineData class
 - [x] T011 [P] [US1] Add legacy G3 path fallback logic to GermlineData class
-- [ ] T012 [US1] Test IgBLAST integration with feature flag enabled **[BLOCKED: Requires BLAST+ tools & database build]**
+- [x] T012 [US1] Test IgBLAST integration with feature flag enabled ✅ (BLAST+ installed, databases built)
 - [x] T013 [US1] Test IgBLAST integration with feature flag disabled (backwards compat)
-- [ ] T014 [US1] Validate AIRR annotation results match between G3 and germlines backends **[BLOCKED: Requires T012]**
+- [x] T014 [US1] Validate AIRR annotation results match between G3 and germlines backends
 
 ---
 

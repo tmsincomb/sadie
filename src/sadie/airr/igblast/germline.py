@@ -68,14 +68,17 @@ class GermlineData:
             # Use germlines module paths (new default)
             germlines_igblast = _get_germlines_igblast_dir()
             self.base_dir = germlines_igblast
-            # Germlines module has different structure
-            self.blast_dir = germlines_igblast / "database" / name / f"{name}_"
+            # Germlines module uses IgBLAST-compatible directory structure:
+            # igblast/Ig/internal_data/{species}/ contains both .ndm.imgt and BLAST databases
+            internal_data_species = germlines_igblast / "Ig" / "internal_data" / name
+            self.blast_dir = internal_data_species / f"{name}_"
             self.v_gene_dir = Path(self.blast_dir.__str__() + "V")
             self.d_gene_dir = Path(self.blast_dir.__str__() + "D")
             self.j_gene_dir = Path(self.blast_dir.__str__() + "J")
             self.c_gene_dir = Path(self.blast_dir.__str__() + "C")
             self.aux_path = germlines_igblast / "aux_db" / f"{name}_gl.aux"
-            self.igdata = germlines_igblast / "internal_data"
+            # IGDATA points to the directory containing internal_data/
+            self.igdata = germlines_igblast / "Ig"
         else:
             # Legacy G3 paths (deprecated, for backwards compatibility)
             self.base_dir = Path(__file__).absolute().parent / "../data/germlines/"

@@ -174,7 +174,7 @@ class TestGermlineToG3Adapter:
         from sadie.germlines.g3_adapter import GermlineToG3Adapter
 
         # Get a gene from germlines
-        gene = get_gene_by_name("human", "IGHV1-69*01")
+        gene = get_gene_by_name("IGHV1-69*01", "human")
         assert gene is not None, "Should find gene in germlines"
 
         # Transform to G3 format
@@ -193,11 +193,11 @@ class TestGermlineToG3Adapter:
 
     def test_adapter_batch_transform(self, monkeypatch):
         """Test adapter batch transformation."""
-        from sadie.germlines import get_genes
+        from sadie.germlines import get_germline_genes
         from sadie.germlines.g3_adapter import GermlineToG3Adapter
 
         # Get multiple genes
-        genes = get_genes("human", "V", "H", provider="imgt")
+        genes = get_germline_genes("human", "V", "H")
         assert len(genes) > 0, "Should find genes"
 
         # Transform batch

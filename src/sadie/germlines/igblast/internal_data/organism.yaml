@@ -1,0 +1,8 @@
+organisms:
+  human:
+    aux_file: ../aux_db/human_gl.aux
+    database_path: ../database/human
+    segments:
+    - V
+    - D
+    - J

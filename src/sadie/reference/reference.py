@@ -189,7 +189,7 @@ class Reference:
         if self.use_germlines:
             from sadie.germlines import get_gene_by_name
 
-            germline_gene = get_gene_by_name(gene.species, gene.gene)
+            germline_gene = get_gene_by_name(gene.gene, gene.species)
             if not germline_gene:
                 raise G3Error(f"Gene {gene.gene} not found in germlines database for species {gene.species}")
 
@@ -241,16 +241,15 @@ class Reference:
 
         # Use germlines module if enabled
         if self.use_germlines:
-            from sadie.germlines import get_genes as germlines_get_genes
+            from sadie.germlines import get_gene_by_name
 
             # Get all genes for the species from germlines
             # Note: germlines get_genes requires segment and chain, so we'll query
             # by individual gene names instead
             results = []
             for gene_name in genes.genes:
-                from sadie.germlines import get_gene_by_name
-
-                germline_gene = get_gene_by_name(genes.species, gene_name)
+                # Note: get_gene_by_name signature is (name, species)
+                germline_gene = get_gene_by_name(gene_name, genes.species)
                 if germline_gene:
                     g3_dict = self.g3_adapter.to_g3_format(germline_gene)
                     g3_dict["species"] = genes.species
