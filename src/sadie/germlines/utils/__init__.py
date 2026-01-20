@@ -1,3 +1,5 @@
-from .feature_flags import use_germlines_module
+"""Utility modules for germlines package."""
 
-__all__ = ["use_germlines_module"]
+from .feature_flags import use_germlines_module, clear_feature_flag_cache
+
+__all__ = ["use_germlines_module", "clear_feature_flag_cache"]
