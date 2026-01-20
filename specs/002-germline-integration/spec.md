@@ -76,10 +76,10 @@ As a researcher working in an environment without reliable internet, I want AIRR
 ### Edge Cases
 
 - What happens when a requested germline provider has no data for the specified species?
-- How does the system handle conflicting gene names across multiple providers?
-- What happens when switching providers mid-analysis for linked datasets?
+- Conflicting gene names across providers: First provider in priority order wins (silent resolution, consistent with germlines module design).
+- Provider switching mid-analysis: Allowed; user responsible for maintaining consistency across linked datasets.
 - How does the system behave when custom germlines have invalid sequences?
-- What happens when the germlines module is not yet populated (first-time setup)?
+- First-time setup with unpopulated germlines: Fail with clear error message and setup instructions (no silent fallback).
 
 ## Requirements *(mandatory)*
 
@@ -95,11 +95,11 @@ As a researcher working in an environment without reliable internet, I want AIRR
 
 - **FR-005**: System MUST provide clear error messages when a requested provider has no data for the specified species.
 
-- **FR-006**: System MUST support backwards compatibility - existing code using default settings continues to work without changes.
+- **FR-006**: System MUST support backwards compatibility - G3 remains the default backend; germlines backend is opt-in via an explicit parameter. Existing code using default settings continues to work without changes.
 
-- **FR-007**: System MUST include a new test directory `tests/unit/germlines/` containing tests that mirror `tests/unit/airr/` functionality using germlines backend.
+- **FR-007**: System MUST include a new test directory `tests/unit/germlines/` containing critical path tests that mirror core AIRR annotation functionality using germlines backend.
 
-- **FR-008**: System MUST include tests that mirror `tests/unit/renumbering/` functionality using germlines backend.
+- **FR-008**: System MUST include critical path tests that mirror core renumbering functionality using germlines backend.
 
 - **FR-009**: System MUST support the same species, chains, and segments currently supported by the existing AIRR and Renumbering modules.
 
@@ -117,9 +117,9 @@ As a researcher working in an environment without reliable internet, I want AIRR
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of existing `tests/unit/airr/` test functionality is mirrored in `tests/unit/germlines/` with passing results using germlines backend.
+- **SC-001**: Critical path AIRR annotation tests are mirrored in `tests/unit/germlines/` with passing results using germlines backend.
 
-- **SC-002**: 100% of existing `tests/unit/renumbering/` test functionality is mirrored with passing results using germlines backend.
+- **SC-002**: Critical path renumbering tests are mirrored with passing results using germlines backend.
 
 - **SC-003**: Users can complete AIRR analysis with any available germline provider without errors.
 
@@ -130,6 +130,16 @@ As a researcher working in an environment without reliable internet, I want AIRR
 - **SC-006**: System operates fully offline after initial germlines database population.
 
 - **SC-007**: No breaking changes to existing user workflows - all existing tests in `tests/unit/airr/` and `tests/unit/renumbering/` continue to pass.
+
+## Clarifications
+
+### Session 2026-01-19
+
+- Q: How does the system handle conflicting gene names across multiple providers? → A: First provider in priority order wins (silent resolution)
+- Q: How does backwards compatibility work for existing code? → A: G3 remains default; germlines is opt-in via parameter
+- Q: What scope of tests should be mirrored? → A: Mirror critical path tests only (AIRR annotation, renumbering core)
+- Q: What happens when germlines module is not populated (first-time setup)? → A: Fail with clear error message and setup instructions
+- Q: What happens when switching providers mid-analysis for linked datasets? → A: Allow switching; user responsibility for consistency
 
 ## Assumptions
 

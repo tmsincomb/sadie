@@ -32,6 +32,7 @@
 ## Notes
 
 - All items pass validation
-- Spec is ready for `/speckit.clarify` or `/speckit.plan`
+- Clarification session completed 2026-01-19 (5 questions resolved)
+- Spec is ready for `/speckit.plan`
 - Key assumption: germlines module from 001-germline-completion is populated and functional
 - The spec intentionally avoids specifying implementation approach (e.g., parameter names, class modifications) to stay technology-agnostic
