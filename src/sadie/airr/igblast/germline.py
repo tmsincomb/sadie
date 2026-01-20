@@ -60,19 +60,33 @@ class GermlineData:
             the receptor type, by default "Ig"
         """
         self.name = name
+
+        # Determine base directory based on feature flag
         if database_dir:
             self.base_dir = Path(database_dir).absolute()
+        elif _use_germlines_module():
+            # Use germlines module paths (new default)
+            germlines_igblast = _get_germlines_igblast_dir()
+            self.base_dir = germlines_igblast
+            # Germlines module has different structure
+            self.blast_dir = germlines_igblast / "database" / name / f"{name}_"
+            self.v_gene_dir = Path(self.blast_dir.__str__() + "V")
+            self.d_gene_dir = Path(self.blast_dir.__str__() + "D")
+            self.j_gene_dir = Path(self.blast_dir.__str__() + "J")
+            self.c_gene_dir = Path(self.blast_dir.__str__() + "C")
+            self.aux_path = germlines_igblast / "aux_db" / f"{name}_gl.aux"
+            self.igdata = germlines_igblast / "internal_data"
         else:
+            # Legacy G3 paths (deprecated, for backwards compatibility)
             self.base_dir = Path(__file__).absolute().parent / "../data/germlines/"
-        self.blast_dir = Path(str(self.base_dir) + f"/{receptor}/blastdb/{name}/{name}_")
-        self.v_gene_dir = Path(self.blast_dir.__str__() + "V")
-        self.d_gene_dir = Path(self.blast_dir.__str__() + "D")
-        self.j_gene_dir = Path(self.blast_dir.__str__() + "J")
-        self.c_gene_dir = Path(self.blast_dir.__str__() + "C")
-        self.aux_path = self.base_dir / f"aux_db/{scheme}/{name}_gl.aux"
-
-        # the literal 'internal_data/{name}` must be discovered by IgBLAST
-        self.igdata = self.base_dir / f"{receptor}/"
+            self.blast_dir = Path(str(self.base_dir) + f"/{receptor}/blastdb/{name}/{name}_")
+            self.v_gene_dir = Path(self.blast_dir.__str__() + "V")
+            self.d_gene_dir = Path(self.blast_dir.__str__() + "D")
+            self.j_gene_dir = Path(self.blast_dir.__str__() + "J")
+            self.c_gene_dir = Path(self.blast_dir.__str__() + "C")
+            self.aux_path = self.base_dir / f"aux_db/{scheme}/{name}_gl.aux"
+            # the literal 'internal_data/{name}` must be discovered by IgBLAST
+            self.igdata = self.base_dir / f"{receptor}/"
 
     @property
     def base_dir(self) -> Path:
