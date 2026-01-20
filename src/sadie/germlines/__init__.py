@@ -31,7 +31,28 @@ Pipeline:
     sources/ → normalize → normalized/ → build → igblast/
 """
 
+import logging
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+def _log_event(level: int, event: str, **kwargs) -> None:
+    """
+    Log event with structured key-value fields.
+
+    Parameters
+    ----------
+    level : int
+        Logging level
+    event : str
+        Event name
+    **kwargs
+        Key-value pairs to log
+    """
+    fields = " ".join(f"{k}={v}" for k, v in kwargs.items())
+    logger.log(level, f"event={event} {fields}")
 
 from .models import GermlineGene, ProviderMetadata
 from .manager import GermlineManager
@@ -135,6 +156,12 @@ def get_gene_by_name(
     return manager.get_gene_by_name(name, species)
 
 
+def get_germlines_base_dir() -> "Path":
+    """Get the base directory for the germlines module."""
+    from pathlib import Path
+    return Path(__file__).parent
+
+
 def update_databases(species: str = "human", force: bool = False) -> None:
     """
     Update germline databases for species.
@@ -171,6 +198,7 @@ __all__ = [
     "get_gene_by_name",
     "get_manager",
     "get_pipeline",
+    "get_germlines_base_dir",
     "update_databases",
 ]
 

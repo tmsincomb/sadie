@@ -33,16 +33,33 @@ Output Directory Structure:
 """
 
 import argparse
+import json
 import logging
 import re
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
 logger = logging.getLogger(__name__)
+
+CHECKPOINT_FILE = ".download_progress.json"
+
+
+def _load_checkpoint(checkpoint_path: Path) -> dict:
+    if checkpoint_path.exists():
+        try:
+            return json.loads(checkpoint_path.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_checkpoint(checkpoint_path: Path, data: dict):
+    checkpoint_path.write_text(json.dumps(data, indent=2))
 
 # IMGT V-QUEST reference directory base URL
 IMGT_BASE_URL = "https://www.imgt.org/download/V-QUEST/IMGT_V-QUEST_reference_directory"
@@ -221,7 +238,7 @@ class IMGTDownloader:
     ) -> int:
         """
         Download all segments for a species.
-        
+
         Parameters
         ----------
         imgt_name : str
@@ -232,7 +249,7 @@ class IMGTDownloader:
             Segments to download
         force : bool
             Force re-download
-            
+
         Returns
         -------
         int
@@ -240,42 +257,70 @@ class IMGTDownloader:
         """
         species_dir = self.output_dir / internal_name
         species_dir.mkdir(parents=True, exist_ok=True)
-        
+
+        checkpoint_path = species_dir / CHECKPOINT_FILE
+        checkpoint = _load_checkpoint(checkpoint_path)
+        completed_segments = set(checkpoint.get("completed_segments", []))
+
         total_count = 0
-        
+        total_segments = len(segments)
+        completed_count = 0
+
         for segment in segments:
-            # Determine if IG or TR
             receptor_type = "IG" if segment.startswith("IG") else "TR"
-            
-            # Build URL
             url = f"{IMGT_BASE_URL}/{imgt_name}/{receptor_type}/{segment}.fasta"
-            
-            # Output file paths
+
             gapped_path = species_dir / f"{segment}_gapped.fasta"
             ungapped_path = species_dir / f"{segment}.fasta"
-            
-            # Skip if exists and not forcing
+
+            if segment in completed_segments and not force:
+                if gapped_path.exists():
+                    count = self._count_sequences(gapped_path)
+                    logger.debug(f"Skipping {segment} (checkpoint, {count} sequences)")
+                    total_count += count
+                    completed_count += 1
+                    continue
+
             if gapped_path.exists() and ungapped_path.exists() and not force:
-                # Count existing sequences
                 count = self._count_sequences(gapped_path)
                 logger.debug(f"Skipping {segment} (exists with {count} sequences)")
                 total_count += count
+                completed_segments.add(segment)
+                completed_count += 1
                 continue
-            
-            # Download and process
+
             try:
                 count = self._download_segment(url, gapped_path, ungapped_path)
                 total_count += count
+                completed_segments.add(segment)
+                completed_count += 1
+
                 if count > 0:
                     logger.info(f"  {segment}: {count} sequences")
+
+                if completed_count % 10 == 0 or completed_count == total_segments:
+                    pct = int(100 * completed_count / total_segments)
+                    logger.info(f"Downloaded {completed_count}/{total_segments} files ({pct}%)")
+
+                _save_checkpoint(checkpoint_path, {
+                    "completed_segments": list(completed_segments),
+                    "total_segments": total_segments,
+                    "timestamp": datetime.now().isoformat(),
+                    "last_segment": segment
+                })
+
             except HTTPError as e:
                 if e.code == 404:
                     logger.debug(f"  {segment}: not available for this species")
+                    completed_segments.add(segment)
                 else:
                     logger.warning(f"  {segment}: HTTP error {e.code}")
             except Exception as e:
                 logger.warning(f"  {segment}: failed - {e}")
-        
+
+        if checkpoint_path.exists():
+            checkpoint_path.unlink()
+
         return total_count
     
     def _download_segment(
