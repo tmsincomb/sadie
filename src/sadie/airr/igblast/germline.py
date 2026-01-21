@@ -83,13 +83,13 @@ class GermlineData:
                 # IGDATA points to the directory containing internal_data/
                 self.igdata = germlines_igblast / "Ig"
             else:
-                # Fall back to legacy G3 paths for species not in germlines
-                logger.warning(
-                    f"Species '{name}' not found in germlines module. "
-                    f"Falling back to legacy paths. Build germlines databases with: "
-                    f"update_databases('{name}')"
+                # NFR-002: No silent fallback to G3 when germlines is selected
+                raise ValueError(
+                    f"Species '{name}' not found in germlines module at "
+                    f"{internal_data_species}. "
+                    f"Build germlines databases with: update_databases('{name}'). "
+                    f"To use legacy G3 paths, set SADIE_USE_GERMLINES_MODULE=false."
                 )
-                self._use_legacy_paths(name, receptor, scheme)
         else:
             # Legacy G3 paths (deprecated, for backwards compatibility)
             self._use_legacy_paths(name, receptor, scheme)

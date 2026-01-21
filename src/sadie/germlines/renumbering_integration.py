@@ -136,7 +136,8 @@ class LocalHMMBuilder:
         self,
         species: str,
         chain: str,
-        source: str
+        source: str,
+        strict: bool = True
     ) -> List[Tuple[str, str]]:
         """
         Get V-J alignment pairs from germlines database.
@@ -149,16 +150,24 @@ class LocalHMMBuilder:
             Chain type
         source : str
             Data source
+        strict : bool
+            If True, raise error when genes lack gapped sequences (FR-013)
 
         Returns
         -------
         List[Tuple[str, str]]
             List of (gene_name, gapped_aa_sequence) tuples
+
+        Raises
+        ------
+        ValueError
+            If strict=True and genes are missing both gapped AA and gapped NT
         """
         from sadie.germlines import get_manager
 
         manager = get_manager()
         pairs = []
+        missing_gapped = []
 
         # Get V and J genes
         for segment in ["V", "J"]:
@@ -173,6 +182,26 @@ class LocalHMMBuilder:
                     aa_gapped = self._translate_gapped_nt_to_aa(gene.sequence_gapped)
                     if aa_gapped:
                         pairs.append((gene.name, aa_gapped))
+                    else:
+                        missing_gapped.append(gene.name)
+                else:
+                    # FR-013: Track genes missing both gapped sequences
+                    missing_gapped.append(gene.name)
+
+        # FR-013: Fail-fast when genes lack gapped data for HMM building
+        if strict and missing_gapped:
+            logger.warning(
+                f"Genes missing gapped sequences for {species} {chain}: "
+                f"{missing_gapped[:10]}{'...' if len(missing_gapped) > 10 else ''}"
+            )
+            # Only fail if we have NO pairs at all
+            if not pairs:
+                raise ValueError(
+                    f"Cannot build HMM for {species} {chain}: no genes have "
+                    f"gapped sequences. Missing genes: {missing_gapped[:5]}. "
+                    f"Ensure germline data includes sequence_aa_gapped or "
+                    f"sequence_gapped fields."
+                )
 
         return pairs
 
