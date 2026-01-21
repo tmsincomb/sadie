@@ -165,11 +165,85 @@ class LocalHMMBuilder:
             genes = manager.get_genes(species, segment, chain)
 
             for gene in genes:
+                # First try pre-computed gapped AA sequence
                 if gene.sequence_aa_gapped:
-                    # Use gapped amino acid sequence for alignment
                     pairs.append((gene.name, gene.sequence_aa_gapped))
+                # Fall back to translating gapped nucleotide sequence
+                elif gene.sequence_gapped:
+                    aa_gapped = self._translate_gapped_nt_to_aa(gene.sequence_gapped)
+                    if aa_gapped:
+                        pairs.append((gene.name, aa_gapped))
 
         return pairs
+
+    def _translate_gapped_nt_to_aa(self, gapped_nt: str) -> Optional[str]:
+        """
+        Translate IMGT-gapped nucleotide sequence to gapped amino acid.
+
+        IMGT gaps are represented as dots. We preserve gap positions while
+        translating the nucleotide codons to amino acids.
+
+        Parameters
+        ----------
+        gapped_nt : str
+            IMGT-gapped nucleotide sequence (dots for gaps)
+
+        Returns
+        -------
+        str or None
+            Gapped amino acid sequence, or None if translation fails
+        """
+        from Bio.Seq import Seq
+
+        # Remove gaps to get pure nucleotide sequence
+        nt_ungapped = gapped_nt.replace(".", "").replace("-", "")
+
+        # Must be multiple of 3 for translation
+        # Truncate to nearest codon boundary
+        codon_len = (len(nt_ungapped) // 3) * 3
+        if codon_len < 3:
+            return None
+
+        nt_for_translation = nt_ungapped[:codon_len]
+
+        try:
+            aa_seq = str(Seq(nt_for_translation).translate())
+        except Exception:
+            return None
+
+        # Now we need to insert gaps at the correct positions
+        # IMGT numbering: every 3 nucleotide positions = 1 AA position
+        # Gaps in NT sequence need to be mapped to AA positions
+
+        # Build the gapped AA sequence
+        aa_gapped_chars = []
+        nt_pos = 0
+        aa_pos = 0
+
+        i = 0
+        while i < len(gapped_nt) and aa_pos < len(aa_seq):
+            char = gapped_nt[i]
+            if char in (".", "-"):
+                # This is a gap - accumulate gaps until we have 3
+                gap_count = 0
+                while i < len(gapped_nt) and gapped_nt[i] in (".", "-"):
+                    gap_count += 1
+                    i += 1
+                # For every 3 NT gaps, insert 1 AA gap
+                aa_gaps = gap_count // 3
+                aa_gapped_chars.extend(["."] * aa_gaps)
+            else:
+                # This is a nucleotide - consume 3 NTs, output 1 AA
+                codon_chars = 0
+                while i < len(gapped_nt) and codon_chars < 3:
+                    if gapped_nt[i] not in (".", "-"):
+                        codon_chars += 1
+                    i += 1
+                if aa_pos < len(aa_seq):
+                    aa_gapped_chars.append(aa_seq[aa_pos])
+                    aa_pos += 1
+
+        return "".join(aa_gapped_chars) if aa_gapped_chars else None
 
     def _write_stockholm(
         self,
@@ -199,21 +273,24 @@ class LocalHMMBuilder:
 
         sto_path = sto_dir / f"{species}_{chain}.sto"
 
+        # Find max sequence length and max name length
+        max_seq_len = max(len(seq) for _, seq in pairs)
+        max_name_len = max(len(name) for name, _ in pairs)
+
         lines = [
             "# STOCKHOLM 1.0",
             f"#=GF ID {species}_{chain}",
             ""
         ]
 
-        # Find max name length for alignment
-        max_len = max(len(name) for name, _ in pairs)
-
         for name, seq in pairs:
-            lines.append(f"{name.ljust(max_len)}  {seq}")
+            # Pad sequences to same length with gaps (.)
+            padded_seq = seq.ljust(max_seq_len, ".")
+            lines.append(f"{name.ljust(max_name_len)}  {padded_seq}")
 
-        # Add reference line and terminator
-        lines.append("")
-        lines.append(f"#=GC RF{''.ljust(max_len)}  {'x' * 128}")
+        # Add reference line (RF) matching the alignment length and terminator
+        rf_label = f"#=GC RF".ljust(max_name_len + 2)
+        lines.append(f"{rf_label}  {'x' * max_seq_len}")
         lines.append("//")
 
         sto_path.write_text("\n".join(lines))

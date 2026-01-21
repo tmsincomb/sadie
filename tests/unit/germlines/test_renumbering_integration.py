@@ -51,14 +51,16 @@ class TestRenumberingIntegration:
         assert hasattr(hmm, "name"), "HMM should have name attribute"
         assert b"human" in hmm.name or b"H" in hmm.name, f"HMM name should contain species/chain: {hmm.name}"
 
-        # Test alignment with the HMM
+        # Test alignment with the HMM using hmmsearch
         sequences = [self.TEST_AB_SEQ]
-        results = hmmer.align_sequences(sequences)
+        results = hmmer.hmmsearch(sequences, bit_score_threshold=50)
 
         # Verify alignment results
         assert len(results) > 0, "Should produce alignment results"
         result = results[0]
-        assert "score" in result or "alignment" in result, "Result should contain alignment data"
+        # hmmsearch returns list of lists containing dicts with bitscore, query, etc.
+        assert len(result) > 0, "Result should contain alignment hits"
+        assert "bitscore" in result[0], "Result should contain bitscore"
 
     def test_hmm_caching(self, monkeypatch, tmp_path):
         """T037: Test HMM caching behavior of LocalHMMBuilder.
@@ -112,7 +114,7 @@ class TestRenumberingIntegration:
 
         # Test alignment (should work offline)
         sequences = [self.TEST_AB_SEQ]
-        results = hmmer.align_sequences(sequences)
+        results = hmmer.hmmsearch(sequences, bit_score_threshold=50)
 
         # Verify offline alignment succeeded
         assert len(results) > 0, "Renumbering should work offline with germlines"

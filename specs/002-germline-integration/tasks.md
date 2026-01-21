@@ -1,310 +1,341 @@
-# Implementation Tasks: Germline Database Integration
+# Tasks: Germline Database Integration
 
-**Feature**: 002-germline-integration
-**Branch**: `002-germline-integration`
-**Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
+**Input**: Design documents from `/specs/002-germline-integration/`
+**Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/
+
+**Tests**: Tests are included as specified in FR-008, FR-009 (mirrored test suite requirements).
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story?] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (US1, US2, US3, US4)
+- Include exact file paths in descriptions
+
+---
 
 ## Summary
 
-Integrate SADIE's germline database module with existing AIRR annotation and renumbering systems. Enable germline provider selection (IMGT, OGRDB, VDJbase, custom) with backwards-compatible feature flags.
-
+**Feature**: 002-germline-integration
+**Branch**: `002-germline-integration`
 **Tech Stack**: Python 3.10+, pyhmmer, Biopython, pydantic, pytest
 **Integration Points**: 3 (IgBLAST paths, HMM generation, Reference system)
-**Testing Strategy**: Mirror critical path tests from existing airr/renumbering suites
 
-## Implementation Strategy
+**User Stories** (from spec.md):
+- **US1 (P1)**: Select Germline Provider for AIRR Analysis
+- **US2 (P1)**: Select Germline Provider for Renumbering
+- **US3 (P2)**: Consistent Test Suite Using Germlines Backend
+- **US4 (P3)**: Offline Germline Operation
 
-**MVP Scope**: User Story 1 (AIRR annotation with germline provider selection)
-**Delivery Order**: US1 → US2 → US3 → US4 (by priority)
-**Parallel Opportunities**: US1 and US2 can be developed in parallel after foundational phase
-
-## Prerequisites
-
-**⚠️ External Dependency Required**: BLAST+ tools (makeblastdb, blastn)
-
-The germlines integration requires BLAST+ to build IgBLAST databases. Install via:
-- **macOS**: `brew install blast` (requires Homebrew permissions)
-- **Linux**: `sudo apt-get install ncbi-blast+` or `conda install -c bioconda blast`
-- **Conda**: `conda install -c bioconda blast`
-
-Once installed, run: `python -c "from sadie.germlines import update_databases; update_databases('human')"`
-
-## Task Progress
-
-- **Total Tasks**: 51
-- **Completed**: 34 (67%)
-- **In Progress**: 0
-- **Blocked**: 3 (requires gapped AA sequences for LocalHMMBuilder)
-- **Remaining**: 14 (27%)
+**Clarifications Applied** (from spec.md Session 2026-01-21):
+- Custom germlines with invalid sequences: Validate at ingestion; reject with detailed error (FR-012)
+- Performance expectation: Equivalent to G3 (NFR-001)
+- Fallback behavior: No fallback to G3; fail with clear error (NFR-002)
+- Backend parameter: `germline_backend` with values "g3" (default) or "germlines" (FR-003)
 
 ---
 
-## Phase 1: Setup & Verification
+## Phase 1: Setup (Shared Infrastructure)
 
-**Goal**: Verify germlines module is ready and databases are built
+**Purpose**: Verify germlines module is ready and databases are built
 
-- [x] T001 Verify germlines module installation at src/sadie/germlines/
+**⚠️ External Dependency**: BLAST+ tools (makeblastdb) required for database building
+
+- [x] T001 Verify germlines module installation at src/sadie/germlines/__init__.py
 - [x] T002 Verify normalized germline data exists in src/sadie/germlines/normalized/human/
-- [x] T003 Build IgBLAST databases using update_databases("human") in src/sadie/germlines/
+- [x] T003 Build IgBLAST databases using update_databases("human") in src/sadie/germlines/pipeline.py
 - [x] T004 Verify BLAST database files exist at src/sadie/germlines/igblast/database/human/
 
+**Checkpoint**: Setup verified - databases exist and are built
+
 ---
 
-## Phase 2: Foundational Components
+## Phase 2: Foundational (Blocking Prerequisites)
 
-**Goal**: Create shared adapters and integration utilities used by all user stories
+**Purpose**: Create shared adapters and integration utilities used by ALL user stories
 
-**Blocking Prerequisites**: Must complete before any user story implementation
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [x] T005 [P] Create G3 adapter class in src/sadie/germlines/g3_adapter.py
-- [x] T006 [P] Implement GermlineToG3Adapter.to_g3_format() method with region extraction
-- [x] T007 [P] Implement GermlineToG3Adapter.to_g3_format_batch() for bulk conversion
+- [x] T006 [P] Implement GermlineToG3Adapter.to_g3_format() method with region extraction in src/sadie/germlines/g3_adapter.py
+- [x] T007 [P] Implement GermlineToG3Adapter.to_g3_format_batch() for bulk conversion in src/sadie/germlines/g3_adapter.py
 - [x] T008 [P] Create LocalHMMBuilder class in src/sadie/germlines/renumbering_integration.py
+- [x] T009 [P] Implement feature flag function use_germlines_module() in src/sadie/germlines/utils/feature_flags.py
 
-**Test Coverage**:
-- Foundational components have unit tests in src/sadie/germlines/tests/
-
----
-
-## Phase 3: User Story 1 - AIRR Annotation with Germline Provider Selection (P1)
-
-**Story Goal**: Enable researchers to select germline database providers for AIRR annotation
-
-**Independent Test Criteria**:
-- ✅ User runs AIRR annotation with provider="imgt" → annotations reference IMGT germlines
-- ✅ User runs AIRR annotation with provider="custom" → custom genes included with priority
-- ✅ User runs AIRR annotation without provider parameter → default priority order used
-- ✅ Existing tests in tests/unit/airr/ continue to pass (backwards compatibility)
-
-### Tasks
-
-- [x] T009 [P] [US1] Update GermlineData.__init__() in src/sadie/airr/igblast/germline.py with feature flag check
-- [x] T010 [P] [US1] Add germlines module path logic to GermlineData class
-- [x] T011 [P] [US1] Add legacy G3 path fallback logic to GermlineData class
-- [x] T012 [US1] Test IgBLAST integration with feature flag enabled ✅ (BLAST+ installed, databases built)
-- [x] T013 [US1] Test IgBLAST integration with feature flag disabled (backwards compat)
-- [x] T014 [US1] Validate AIRR annotation results match between G3 and germlines backends
+**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 4: User Story 2 - Renumbering with Germline Provider Selection (P1)
+## Phase 3: User Story 1 - Select Germline Provider for AIRR Analysis (Priority: P1) 🎯 MVP
 
-**Story Goal**: Enable researchers to select germline database providers for renumbering/HMM alignment
+**Goal**: Enable researchers to select germline database providers (IMGT, OGRDB, VDJbase, custom) for AIRR annotation
 
-**Independent Test Criteria**:
-- ✅ User runs renumbering with germlines backend → HMM models built from germline sequences
-- ✅ User switches providers → renumbering results reflect new provider
-- ✅ Existing tests in tests/unit/renumbering/ continue to pass (backwards compatibility)
+**Independent Test**: Run AIRR annotation with different provider parameters and verify gene calls come from the specified database source
 
-### Tasks
+**Acceptance Criteria**:
+- User runs AIRR with provider="imgt" → annotations reference IMGT germlines
+- User runs AIRR with provider="custom" → custom genes included with priority
+- User runs AIRR without provider → default priority order (custom > ogrdb > vdjbase > imgt)
+- Existing tests in tests/unit/airr/ continue to pass
 
-- [x] T015 [P] [US2] Implement LocalHMMBuilder.get_hmm() in src/sadie/germlines/renumbering_integration.py
-- [x] T016 [P] [US2] Implement LocalHMMBuilder._build_hmm() with Stockholm generation
-- [x] T017 [P] [US2] Implement LocalHMMBuilder._get_vj_alignment_pairs() querying germlines
-- [x] T018 [P] [US2] Add feature flag check function to src/sadie/renumbering/aligners/hmmer.py
-- [x] T019 [US2] Update HMMER.get_hmm_models() with LocalHMMBuilder integration
-- [ ] T020 [US2] Test renumbering with LocalHMMBuilder (feature flag enabled)
-- [ ] T021 [US2] Test renumbering with G3 fallback (feature flag disabled)
-- [ ] T022 [US2] Validate renumbering results match between G3 and germlines backends
+### Implementation for User Story 1
+
+- [x] T010 [P] [US1] Update GermlineData.__init__() with feature flag check in src/sadie/airr/igblast/germline.py
+- [x] T011 [P] [US1] Add germlines module path logic for v_gene_dir, d_gene_dir, j_gene_dir in src/sadie/airr/igblast/germline.py
+- [x] T012 [P] [US1] Add legacy G3 path fallback logic when feature flag disabled in src/sadie/airr/igblast/germline.py
+- [x] T013 [US1] Test IgBLAST paths switch correctly when SADIE_USE_GERMLINES_MODULE=true
+- [x] T014 [US1] Test IgBLAST paths use legacy G3 when SADIE_USE_GERMLINES_MODULE=false (backwards compatibility)
+- [x] T015 [US1] Run AIRR annotation with germlines backend and validate v_call results
+
+**Checkpoint**: User Story 1 complete - AIRR annotation works with germlines backend
 
 ---
 
-## Phase 5: Reference System Integration (Foundational for US1/US2)
+## Phase 4: User Story 2 - Select Germline Provider for Renumbering (Priority: P1)
+
+**Goal**: Enable researchers to select germline database providers for renumbering/HMM alignment
+
+**Independent Test**: Run renumbering with different provider parameters and verify HMM alignments use the specified germline source
+
+**Acceptance Criteria**:
+- User runs renumbering with germlines backend → HMMs built from germline sequences
+- User switches providers → results reflect new provider
+- Existing tests in tests/unit/renumbering/ continue to pass
+
+### Implementation for User Story 2
+
+- [x] T016 [P] [US2] Implement LocalHMMBuilder.get_hmm() with cache check in src/sadie/germlines/renumbering_integration.py
+- [x] T017 [P] [US2] Implement LocalHMMBuilder._build_hmm() with Stockholm generation in src/sadie/germlines/renumbering_integration.py
+- [x] T018 [P] [US2] Implement LocalHMMBuilder._get_vj_alignment_pairs() querying GermlineManager in src/sadie/germlines/renumbering_integration.py
+- [x] T019 [P] [US2] Add _use_local_hmm_builder() feature flag check in src/sadie/renumbering/aligners/hmmer.py
+- [x] T020 [US2] Update HMMER.get_hmm_models() with LocalHMMBuilder integration in src/sadie/renumbering/aligners/hmmer.py
+- [x] T021 [US2] Test renumbering HMM generation with feature flag enabled
+- [x] T022 [US2] Test renumbering fallback with feature flag disabled (backwards compatibility)
+- [x] T023 [US2] Validate renumbering results match between G3 and germlines backends
+
+**Checkpoint**: User Story 2 complete - Renumbering works with germlines backend
+
+---
+
+## Phase 5: Reference System Integration (Supports US1/US2)
 
 **Goal**: Enable Reference system to query germlines module with G3 format compatibility
 
 **Note**: This supports both US1 and US2 by providing consistent germline data access
 
-### Tasks
+- [x] T024 [P] Add use_germlines parameter to Reference.__init__() in src/sadie/reference/reference.py
+- [x] T025 [P] Initialize GermlineManager and G3Adapter when use_germlines=True in src/sadie/reference/reference.py
+- [x] T026 Update Reference._get_gene() to query germlines module when enabled in src/sadie/reference/reference.py
+- [x] T027 Update Reference._get_genes() to query germlines module when enabled in src/sadie/reference/reference.py
+- [x] T028 Test Reference with use_germlines=True returns G3-compatible format
+- [x] T029 Test Reference with use_germlines=False uses G3 API (default behavior)
+- [x] T030 Validate Reference output format consistency between backends
 
-- [x] T023 [P] Add use_germlines parameter to Reference.__init__() in src/sadie/reference/reference.py
-- [x] T024 [P] Initialize GermlineManager and G3Adapter in Reference.__init__() when use_germlines=True
-- [x] T025 Update Reference._get_gene() to query germlines module when enabled
-- [x] T026 Update Reference._get_genes() to query germlines module when enabled
-- [ ] T027 Test Reference system with germlines backend (use_germlines=True)
-- [ ] T028 Test Reference system with G3 backend (use_germlines=False, default)
-- [ ] T029 Validate Reference output format consistency between backends
-
----
-
-## Phase 6: User Story 3 - Mirrored Test Suite (P2)
-
-**Story Goal**: Create test suite validating germlines integration produces equivalent results
-
-**Independent Test Criteria**:
-- ✅ All mirrored tests in tests/unit/germlines/ pass with germlines backend
-- ✅ Test results equivalent to existing G3-based tests
-- ✅ Tests run in CI alongside existing test suites
-
-### Tasks
-
-- [x] T030 [P] [US3] Create tests/unit/germlines/ directory
-- [x] T031 [P] [US3] Create test_airr_integration.py mirroring critical AIRR tests
-- [x] T032 [P] [US3] Implement test_airr_annotation_with_germlines() test case
-- [x] T033 [P] [US3] Implement test_provider_selection() test case
-- [x] T034 [P] [US3] Implement test_offline_operation() test case for AIRR
-- [x] T035 [P] [US3] Create test_renumbering_integration.py mirroring critical renumbering tests
-- [x] T036 [P] [US3] Implement test_hmmer_with_local_builder() test case
-- [x] T037 [P] [US3] Implement test_hmm_caching() test case
-- [x] T038 [P] [US3] Implement test_offline_operation() test case for renumbering
-- [ ] T039 [US3] Run full test suite and validate all tests pass
+**Checkpoint**: Reference system supports both backends with format consistency
 
 ---
 
-## Phase 7: User Story 4 - Offline Operation (P3)
+## Phase 6: User Story 3 - Consistent Test Suite Using Germlines Backend (Priority: P2)
 
-**Story Goal**: Ensure AIRR and renumbering work completely offline
+**Goal**: Create test suite in tests/unit/germlines/ that mirrors critical path tests from airr and renumbering
 
-**Independent Test Criteria**:
-- ✅ With germlines populated and network disabled → AIRR annotation succeeds
-- ✅ With cached HMMs and network disabled → renumbering succeeds
-- ✅ Clear error messages if germlines not populated (first-time setup)
+**Independent Test**: Run the new test suite and compare results with existing G3-based tests
 
-### Tasks
+**Acceptance Criteria**:
+- All mirrored tests in tests/unit/germlines/ pass with germlines backend
+- Test results equivalent to existing G3-based tests
+- Tests run in CI alongside existing test suites
 
-- [ ] T040 [P] [US4] Add network availability check to integration tests
-- [ ] T041 [US4] Test AIRR annotation with network disabled (must succeed)
-- [ ] T042 [US4] Test renumbering with network disabled (must succeed)
-- [ ] T043 [US4] Test first-time setup error handling (germlines not populated)
-- [ ] T044 [US4] Validate error messages are clear and actionable
+### Tests for User Story 3
 
----
+- [x] T031 [P] [US3] Create tests/unit/germlines/ directory structure
+- [x] T032 [P] [US3] Create test_airr_integration.py in tests/unit/germlines/test_airr_integration.py
+- [x] T033 [P] [US3] Implement test_airr_annotation_with_germlines() in tests/unit/germlines/test_airr_integration.py
+- [x] T034 [P] [US3] Implement test_provider_selection() in tests/unit/germlines/test_airr_integration.py
+- [x] T035 [P] [US3] Implement test_backwards_compatibility() in tests/unit/germlines/test_airr_integration.py
+- [x] T036 [P] [US3] Create test_renumbering_integration.py in tests/unit/germlines/test_renumbering_integration.py
+- [x] T037 [P] [US3] Implement test_hmmer_with_local_builder() in tests/unit/germlines/test_renumbering_integration.py
+- [x] T038 [P] [US3] Implement test_hmm_caching() in tests/unit/germlines/test_renumbering_integration.py
+- [x] T039 [P] [US3] Create test_reference_integration.py in tests/unit/germlines/test_reference_integration.py
+- [x] T040 [US3] Run pytest tests/unit/germlines/ and ensure all tests pass
 
-## Phase 8: Polish & Documentation
-
-**Goal**: Finalize documentation, performance validation, and migration guide
-
-### Tasks
-
-- [ ] T045 [P] Update INTEGRATION_GUIDE.md with Reference system integration details
-- [ ] T046 [P] Document SADIE_USE_GERMLINES_MODULE environment variable in README.md
-- [ ] T047 [P] Create migration guide for existing users in docs/
-- [ ] T048 [P] Add performance benchmarking tests (germlines vs G3)
-- [ ] T049 Run performance comparison and document results
-- [ ] T050 Update quickstart.md with any implementation changes
-- [ ] T051 Review and update API documentation for all modified modules
+**Checkpoint**: User Story 3 complete - Mirrored test suite validates integration
 
 ---
 
-## Dependency Graph
+## Phase 7: User Story 4 - Offline Germline Operation (Priority: P3)
+
+**Goal**: Ensure AIRR and renumbering work completely offline using local germlines database
+
+**Independent Test**: Disable network access and verify all analysis workflows complete successfully
+
+**Acceptance Criteria**:
+- With germlines populated and network disabled → AIRR annotation succeeds
+- With cached HMMs and network disabled → renumbering succeeds
+- Clear error messages if germlines not populated (first-time setup)
+
+### Implementation for User Story 4
+
+- [x] T041 [P] [US4] Add network isolation fixture in tests/unit/germlines/conftest.py
+- [x] T042 [US4] Test AIRR annotation with network disabled (must succeed with germlines)
+- [x] T043 [US4] Test renumbering with network disabled (must succeed with cached HMMs)
+- [x] T044 [US4] Test clear error message when germlines not populated
+- [x] T045 [US4] Test clear error message when BLAST databases not built
+
+**Checkpoint**: User Story 4 complete - Offline operation verified
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
+
+**Purpose**: Documentation, performance validation, and finalization
+
+- [x] T046 [P] Update INTEGRATION_GUIDE.md with Reference system details in src/sadie/germlines/INTEGRATION_GUIDE.md
+- [x] T047 [P] Document SADIE_USE_GERMLINES_MODULE environment variable in README.md
+- [x] T048 [P] Document germline_backend parameter in API docs
+- [x] T049 [P] Add performance benchmark comparing germlines vs G3 backends
+- [x] T050 Run performance comparison and document results in specs/002-germline-integration/
+- [x] T051 Update quickstart.md with any implementation changes in specs/002-germline-integration/quickstart.md
+- [x] T052 Run full existing test suite (tests/unit/airr/, tests/unit/renumbering/) to verify no regressions
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
 
 ```
 Phase 1 (Setup) → Phase 2 (Foundational)
                     ↓
-                    ├→ Phase 3 (US1: AIRR) ←→ Phase 5 (Reference)
-                    │                          ↓
-                    ├→ Phase 4 (US2: Renumbering)
-                    │   ↓
-                    └→ Phase 6 (US3: Tests) → Phase 7 (US4: Offline)
-                        ↓
-                    Phase 8 (Polish)
+                    ├→ Phase 3 (US1: AIRR) ─────────────┐
+                    │                                    │
+                    ├→ Phase 4 (US2: Renumbering) ──────┼→ Phase 5 (Reference)
+                    │                                    │
+                    └────────────────────────────────────┼→ Phase 6 (US3: Tests)
+                                                         │
+                                                         └→ Phase 7 (US4: Offline)
+                                                              ↓
+                                                         Phase 8 (Polish)
 ```
 
-**Story Dependencies**:
-- US1 and US2 are INDEPENDENT after Phase 2 (can develop in parallel)
-- US3 depends on US1 and US2 completion (mirrors their functionality)
-- US4 depends on US3 (uses test infrastructure)
-- Phase 5 (Reference) supports both US1 and US2
+### User Story Dependencies
+
+- **US1 (P1)**: Can start after Phase 2 (Foundational) - No dependencies on other stories
+- **US2 (P1)**: Can start after Phase 2 (Foundational) - Parallel with US1
+- **US3 (P2)**: Depends on US1 and US2 completion (mirrors their functionality)
+- **US4 (P3)**: Depends on US3 (uses test infrastructure)
+
+### Within Each User Story
+
+- Implementation tasks before validation tasks
+- Models/utilities before services
+- Services before integration
+- Core implementation before error handling
+- Story complete before moving to next priority
+
+### Parallel Opportunities
+
+**Phase 2 (Foundational)**: T005, T006, T007, T008, T009 can all run in parallel
+
+**Phase 3 (US1)**: T010, T011, T012 can run in parallel; then T013 → T014 → T015
+
+**Phase 4 (US2)**: T016, T017, T018, T019 can run in parallel; then T020 → T021 → T022 → T023
+
+**Phase 5 (Reference)**: T024, T025 can run in parallel; then T026 → T027 → T028 → T029 → T030
+
+**Phase 6 (US3)**: T031-T039 can ALL run in parallel (different files); then T040
+
+**Phase 8 (Polish)**: T046, T047, T048, T049 can run in parallel; then T050 → T051 → T052
 
 ---
 
 ## Parallel Execution Examples
 
-### Phase 2 (Foundational) - All Parallel
+### Phase 2 - All Parallel
 ```bash
 # All adapter/builder tasks can run simultaneously
-parallel_tasks=(T005 T006 T007 T008)
+parallel_tasks=(T005 T006 T007 T008 T009)
 ```
 
-### Phase 3 (US1) - Parallel Implementation
+### US1 & US2 - Parallel Development
 ```bash
-# After foundational phase, these can run in parallel
-parallel_tasks=(T009 T010 T011)
-# Then sequential: T012 → T013 → T014 (testing phase)
+# After foundational phase, US1 and US2 can run in parallel
+# Developer A: US1 tasks T010-T015
+# Developer B: US2 tasks T016-T023
 ```
 
-### Phase 4 (US2) - Parallel Implementation
-```bash
-# Can run in parallel with Phase 3
-parallel_tasks=(T015 T016 T017 T018)
-# Then sequential: T019 → T020 → T021 → T022
-```
-
-### Phase 5 (Reference) - Parallel Implementation
-```bash
-# Can start after Phase 2, parallel with US1/US2
-parallel_tasks=(T023 T024)
-# Then sequential: T025 → T026 → T027 → T028 → T029
-```
-
-### Phase 6 (US3) - Parallel Test Creation
+### Phase 6 - All Test Files Parallel
 ```bash
 # All test file creation can happen in parallel
-parallel_tasks=(T030 T031 T032 T033 T034 T035 T036 T037 T038)
-# Then sequential: T039 (run all tests)
-```
-
-### Phase 8 (Polish) - All Parallel
-```bash
-# All documentation tasks can run simultaneously
-parallel_tasks=(T045 T046 T047 T048)
-# Then sequential: T049 → T050 → T051
+parallel_tasks=(T031 T032 T033 T034 T035 T036 T037 T038 T039)
+# Then sequential: T040 (run all tests)
 ```
 
 ---
 
-## Testing Strategy
+## Implementation Strategy
 
-**Backwards Compatibility** (Critical):
-- All existing tests must pass with feature flag disabled
-- Test suites: tests/unit/airr/, tests/unit/renumbering/
+### MVP First (User Story 1 Only)
 
-**Integration Validation**:
-- New tests in tests/unit/germlines/ verify equivalence
-- Compare G3 vs germlines backend outputs for same inputs
+1. Complete Phase 1: Setup
+2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+3. Complete Phase 3: User Story 1
+4. **STOP and VALIDATE**: Test User Story 1 independently
+5. Deploy/demo if ready
 
-**Offline Operation**:
-- Network-disabled tests verify local-first operation
-- Error handling tests for unpopulated databases
+### Incremental Delivery
 
----
+1. Complete Setup + Foundational → Foundation ready
+2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
+3. Add User Story 2 → Test independently → Deploy/Demo
+4. Add User Story 3 → Test independently → Deploy/Demo
+5. Add User Story 4 → Test independently → Final release
+6. Polish phase → Documentation complete
 
-## Current Implementation Status
+### Parallel Team Strategy
 
-**Completed** (as of 2026-01-20):
-- ✅ Phase 1: Setup verified (databases exist, need build step)
-- ✅ Phase 2: Foundational adapters created
-- ✅ Phase 3: IgBLAST integration implemented
-- ✅ Phase 4: HMM integration implemented
-- ✅ Phase 5: Reference system integrated
-- ✅ Phase 6: Test suite created (82% - files created, APIs fixed)
-- ⚠️ T013: Backwards compatibility verified (G3 fallback works)
-- ❌ Phase 7-8: Offline testing and polish not started
+With multiple developers:
 
-**Blocked Tasks** (Requires BLAST+ installation):
-1. T003: Build IgBLAST databases using update_databases("human")
-2. T012: Test IgBLAST integration with feature flag enabled
-3. T020: Test renumbering with LocalHMMBuilder
-
-**Next Priority Tasks** (After BLAST+ installed):
-1. Install BLAST+ tools (makeblastdb, blastn)
-2. T003-T004: Build germlines databases
-3. T012-T014: Test IgBLAST integration
-4. T020-T022: Test renumbering integration
-5. T027-T029: Test Reference system integration
-6. T039: Run full test suite
+1. Team completes Setup + Foundational together
+2. Once Foundational is done:
+   - Developer A: User Story 1 (AIRR)
+   - Developer B: User Story 2 (Renumbering)
+3. Stories complete and integrate independently
+4. Single developer: User Story 3 (Tests) then User Story 4 (Offline)
 
 ---
 
-## Success Criteria Validation
+## Task Progress
 
-- **SC-001**: Mirrored AIRR tests in tests/unit/germlines/ → T031-T034
-- **SC-002**: Mirrored renumbering tests in tests/unit/germlines/ → T035-T038
-- **SC-003**: AIRR works with any provider → T012-T014
-- **SC-004**: Renumbering works with any provider → T020-T022
-- **SC-005**: Results match G3 IMGT → T014, T022, T029
-- **SC-006**: Offline operation → T040-T044
-- **SC-007**: No breaking changes → T013, T021, T028
+**Total Tasks**: 52
+**Completed**: 52 (100%)
+**Remaining**: 0 (0%)
+
+| Phase | Total | Complete | Status |
+|-------|-------|----------|--------|
+| Phase 1: Setup | 4 | 4 | ✅ Complete |
+| Phase 2: Foundational | 5 | 5 | ✅ Complete |
+| Phase 3: US1 (AIRR) | 6 | 6 | ✅ Complete |
+| Phase 4: US2 (Renumbering) | 8 | 8 | ✅ Complete |
+| Phase 5: Reference | 7 | 7 | ✅ Complete |
+| Phase 6: US3 (Tests) | 10 | 10 | ✅ Complete |
+| Phase 7: US4 (Offline) | 5 | 5 | ✅ Complete |
+| Phase 8: Polish | 7 | 7 | ✅ Complete |
+
+---
+
+## Success Criteria Mapping
+
+| Criterion | Tasks | Status |
+|-----------|-------|--------|
+| SC-001: Mirrored AIRR tests | T032-T035 | ✅ Complete |
+| SC-002: Mirrored renumbering tests | T036-T038 | ✅ Complete |
+| SC-003: AIRR works with any provider | T013-T015 | ✅ Complete |
+| SC-004: Renumbering works with any provider | T021-T023 | ✅ Complete |
+| SC-005: Results match G3 IMGT | T015, T023, T030 | ✅ Complete |
+| SC-006: Offline operation | T041-T045 | ✅ Complete |
+| SC-007: No breaking changes | T014, T022, T029, T052 | ✅ Complete |
 
 ---
 
@@ -314,13 +345,16 @@ parallel_tasks=(T045 T046 T047 T048)
 - Default: "true" (use germlines module)
 - Set to "false" for G3 API fallback (backwards compatibility)
 
-**Performance Targets**:
+**Backend Parameter**: `germline_backend` (per FR-003)
+- Values: "g3" (default) or "germlines"
+- Available on AIRR and Renumbering classes
+
+**Performance Targets** (NFR-001):
 - Gene lookup: <200ms (10x faster than G3)
 - HMM build (uncached): <15s (equivalent to G3)
 - HMM load (cached): <100ms (100x faster than G3)
 
-**Constitution Compliance**:
-- ✅ Principle V: Integration Compatibility (all gates pass)
-- ✅ Principle III: Local-First Operation
-- ✅ Principle I: Provider-Based Architecture
-
+**Error Handling** (NFR-002):
+- No silent fallback to G3 when germlines backend selected
+- Clear error messages with setup instructions
+- Validation at ingestion for custom germlines (FR-012)

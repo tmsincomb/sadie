@@ -69,8 +69,16 @@ class HMMER:
             HMM model for specific species
         """
         hmms = []
-        species = species if species else list(Species.species.values())  # type: ignore[assignment]
-        chains = chains if chains else list(Chain.chains)  # type: ignore[assignment]
+        # Normalize species to list
+        if species is None:
+            species = list(Species.species.values())
+        elif isinstance(species, str):
+            species = [species]
+        # Normalize chains to list
+        if chains is None:
+            chains = list(Chain.chains)
+        elif isinstance(chains, str):
+            chains = [chains]
 
         # Check if we should use local HMM builder from germlines
         use_local = _use_local_hmm_builder() and not use_numbering_hmms

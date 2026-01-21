@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-germline-integration`  
 **Created**: 2026-01-19  
-**Status**: Draft  
+**Status**: Planning Complete  
 **Input**: Connect SADIE's new germline database to existing sadie.airr.Airr and sadie.numbering.Renumbering to allow picking new germlines database, plus create tests in tests/unit/germlines mirroring airr and renumbering tests using backend germline instead of default IMGT from G3
 
 ## User Scenarios & Testing *(mandatory)*
@@ -75,11 +75,12 @@ As a researcher working in an environment without reliable internet, I want AIRR
 
 ### Edge Cases
 
-- What happens when a requested germline provider has no data for the specified species?
+- Requested provider has no data for specified species: Fail with clear error message (FR-005); no silent fallback to G3.
 - Conflicting gene names across providers: First provider in priority order wins (silent resolution, consistent with germlines module design).
 - Provider switching mid-analysis: Allowed; user responsible for maintaining consistency across linked datasets.
-- How does the system behave when custom germlines have invalid sequences?
+- Custom germlines with invalid sequences (malformed FASTA, invalid amino acids): Validate at ingestion; reject with detailed error message identifying the specific validation failure.
 - First-time setup with unpopulated germlines: Fail with clear error message and setup instructions (no silent fallback).
+- Germlines backend query failure: No automatic fallback to G3; fail with clear error since user explicitly selected germlines backend.
 
 ## Requirements *(mandatory)*
 
@@ -89,21 +90,31 @@ As a researcher working in an environment without reliable internet, I want AIRR
 
 - **FR-002**: System MUST allow users to specify a germline provider when initializing Renumbering operations.
 
-- **FR-003**: System MUST use a default provider priority order (custom > ogrdb > vdjbase > imgt) when no provider is explicitly specified.
+- **FR-003**: System MUST expose a `germline_backend` parameter accepting values "g3" (default) or "germlines" to select the backend system for germline data.
 
-- **FR-004**: System MUST use local germlines module data instead of G3 API when germlines backend is selected.
+- **FR-004**: System MUST use a default provider priority order (custom > ogrdb > vdjbase > imgt) when no provider is explicitly specified.
 
-- **FR-005**: System MUST provide clear error messages when a requested provider has no data for the specified species.
+- **FR-005**: System MUST use local germlines module data instead of G3 API when germlines backend is selected.
 
-- **FR-006**: System MUST support backwards compatibility - G3 remains the default backend; germlines backend is opt-in via an explicit parameter. Existing code using default settings continues to work without changes.
+- **FR-006**: System MUST provide clear error messages when a requested provider has no data for the specified species.
 
-- **FR-007**: System MUST include a new test directory `tests/unit/germlines/` containing critical path tests that mirror core AIRR annotation functionality using germlines backend.
+- **FR-007**: System MUST support backwards compatibility - G3 remains the default backend; germlines backend is opt-in via an explicit parameter. Existing code using default settings continues to work without changes.
 
-- **FR-008**: System MUST include critical path tests that mirror core renumbering functionality using germlines backend.
+- **FR-008**: System MUST include a new test directory `tests/unit/germlines/` containing critical path tests that mirror core AIRR annotation functionality using germlines backend.
 
-- **FR-009**: System MUST support the same species, chains, and segments currently supported by the existing AIRR and Renumbering modules.
+- **FR-009**: System MUST include critical path tests that mirror core renumbering functionality using germlines backend.
 
-- **FR-010**: System MUST maintain identical output format/schema regardless of which germline provider is used.
+- **FR-010**: System MUST support the same species, chains, and segments currently supported by the existing AIRR and Renumbering modules.
+
+- **FR-011**: System MUST maintain identical output format/schema regardless of which germline provider is used.
+
+- **FR-012**: System MUST validate custom germline sequences at ingestion time, rejecting invalid sequences (malformed FASTA, invalid amino acids) with detailed error messages identifying the specific validation failure.
+
+### Non-Functional Requirements
+
+- **NFR-001**: Germline lookup performance using the local germlines backend MUST be equivalent to G3 backend (no regression from current behavior).
+
+- **NFR-002**: When the germlines backend is explicitly selected, the system MUST NOT silently fall back to G3 on failure; it MUST fail with a clear error message.
 
 ### Key Entities
 
@@ -132,6 +143,15 @@ As a researcher working in an environment without reliable internet, I want AIRR
 - **SC-007**: No breaking changes to existing user workflows - all existing tests in `tests/unit/airr/` and `tests/unit/renumbering/` continue to pass.
 
 ## Clarifications
+
+### Session 2026-01-21
+
+- Q: How should the system handle custom germlines with invalid sequences? → A: Validate at ingestion; reject invalid sequences with detailed error
+- Q: Should there be a performance expectation for germline lookups compared to G3? → A: Equivalent to G3 (no regression from current behavior)
+- Q: If the germlines backend fails for a specific query, should the system fall back to G3? → A: No fallback; fail with clear error (user chose germlines explicitly)
+- Q: What parameter name should be used to specify the germline backend? → A: `germline_backend` (values: "g3" or "germlines")
+
+**Planning Phase Complete** - See [plan.md](./plan.md) for implementation artifacts.
 
 ### Session 2026-01-19
 
