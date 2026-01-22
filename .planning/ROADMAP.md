@@ -9,13 +9,13 @@
 | 3 | US1: AIRR | Enable germline provider selection for AIRR annotation | ✅ Complete |
 | 4 | US2: Renumbering | Enable germline provider selection for renumbering | ✅ Complete |
 | 5 | Reference | Enable Reference system to query germlines module | ✅ Complete |
-| 6 | US3: Tests | Create mirrored test suite using germlines backend | ✅ Complete (10/11) |
+| 6 | US3: Tests | Create mirrored test suite using germlines backend | ✅ Complete |
 | 7 | US4: Offline | Verify offline operation capability | ✅ Complete |
 | 8 | Polish | Documentation, performance validation, finalization | ✅ Complete |
 | 9 | Compliance | Close requirement gaps and enforce constitution | ✅ Complete (8/8) |
 | 10 | Species Expansion | Populate IgBLAST databases for all IMGT-supported species | ✅ Complete |
 
-**Progress**: 73/74 tasks (99%)
+**Progress**: 74/74 tasks (100%)
 
 ---
 
@@ -146,7 +146,7 @@
 - [x] T033: Implement test_airr_annotation_with_germlines()
 - [x] T034: Implement test_provider_selection()
 - [x] T035: Implement test_backwards_compatibility()
-- [ ] T035a: Implement test_gapped_aa_fallback_translation()
+- [x] T035a: Implement test_gapped_aa_fallback_translation()
 - [x] T036: Create test_renumbering_integration.py
 - [x] T037: Implement test_hmmer_with_local_builder()
 - [x] T038: Implement test_hmm_caching()
