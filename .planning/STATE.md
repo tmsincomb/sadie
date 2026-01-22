@@ -8,7 +8,7 @@
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| Phase 1: Setup | ⏳ Near Complete | 4/5 (80%) |
+| Phase 1: Setup | ✅ Complete | 5/5 (100%) |
 | Phase 2: Foundational | ✅ Complete | 5/5 (100%) |
 | Phase 3: US1 AIRR | ✅ Complete | 6/6 (100%) |
 | Phase 4: US2 Renumbering | ✅ Complete | 8/8 (100%) |
@@ -19,12 +19,12 @@
 | Phase 9: Compliance | ✅ Complete | 8/8 (100%) |
 | Phase 10: Species Expansion | ✅ Complete | 12/12 (100%) |
 
-**Overall**: 72/74 tasks (97%)
+**Overall**: 73/74 tasks (99%)
 
 ## Remaining Work
 
-### Phase 1 Gap
-- [ ] T004a: Verify gapped AA/NT sequences for all V/J genes
+### Phase 1 ✅ Complete
+- [x] T004a: Verify gapped AA/NT sequences for all V/J genes
 
 ### Phase 6 Gap
 - [ ] T035a: Test gapped AA fallback translation (gapped NT only scenario)
@@ -90,6 +90,10 @@ None currently identified.
 
 ## Session History
 
+- **2026-01-21**: Verified Phase 1 T004a - Gapped sequences coverage
+  - All 29 species have gapped FASTA files for V/J genes
+  - HMM generation tested: 6/6 passed (human + mouse, all chains)
+  - Phase 1 now complete (5/5 tasks)
 - **2026-01-21**: Completed Phase 10 - Species Expansion
   - Downloaded IMGT data for 27 new species (29 total with human/mouse)
   - Built BLAST databases for all 29 species

@@ -4,7 +4,7 @@
 
 | Phase | Name | Goal | Status |
 |-------|------|------|--------|
-| 1 | Setup | Verify germlines module ready and databases built | ✅ Complete (4/5) |
+| 1 | Setup | Verify germlines module ready and databases built | ✅ Complete |
 | 2 | Foundational | Create shared adapters and integration utilities | ✅ Complete |
 | 3 | US1: AIRR | Enable germline provider selection for AIRR annotation | ✅ Complete |
 | 4 | US2: Renumbering | Enable germline provider selection for renumbering | ✅ Complete |
@@ -12,9 +12,10 @@
 | 6 | US3: Tests | Create mirrored test suite using germlines backend | ✅ Complete (10/11) |
 | 7 | US4: Offline | Verify offline operation capability | ✅ Complete |
 | 8 | Polish | Documentation, performance validation, finalization | ✅ Complete |
-| 9 | Compliance | Close requirement gaps and enforce constitution | 🚧 Not Started (0/8) |
+| 9 | Compliance | Close requirement gaps and enforce constitution | ✅ Complete (8/8) |
+| 10 | Species Expansion | Populate IgBLAST databases for all IMGT-supported species | ✅ Complete |
 
-**Progress**: 52/62 tasks (84%)
+**Progress**: 73/74 tasks (99%)
 
 ---
 
@@ -35,7 +36,7 @@
 - [x] T002: Verify normalized germline data exists
 - [x] T003: Build IgBLAST databases
 - [x] T004: Verify BLAST database files exist
-- [ ] T004a: Verify gapped AA/NT sequences for all V/J genes
+- [x] T004a: Verify gapped AA/NT sequences for all V/J genes
 
 ---
 
@@ -214,14 +215,54 @@
 7. Gapped AA fail-fast implemented
 
 **Tasks**:
-- [ ] T053: Enforce single-provider selection validation (FR-014)
-- [ ] T054: Add tests rejecting per-segment provider parameters
-- [ ] T055: Implement clear error when provider lacks species data (FR-006, NFR-002)
-- [ ] T056: Validate custom germline ingestion (FR-012)
-- [ ] T057: Verify species/chain/segment parity (FR-010)
-- [ ] T058: Test default priority order (FR-004)
-- [ ] T059: Add negative test for no G3 fallback (NFR-002)
-- [ ] T060: Add fail-fast when both gapped AA and gapped NT missing (FR-013)
+- [x] T053: Enforce single-provider selection validation (FR-014)
+- [x] T054: Add tests rejecting per-segment provider parameters
+- [x] T055: Implement clear error when provider lacks species data (FR-006, NFR-002)
+- [x] T056: Validate custom germline ingestion (FR-012)
+- [x] T057: Verify species/chain/segment parity (FR-010)
+- [x] T058: Test default priority order (FR-004)
+- [x] T059: Add negative test for no G3 fallback (NFR-002)
+- [x] T060: Add fail-fast when both gapped AA and gapped NT missing (FR-013)
+
+---
+
+## Phase 10: Species Expansion
+
+**Goal**: Populate germlines IgBLAST databases for all IMGT-supported species
+
+**Requirements**: Enable AIRR/renumbering analysis for all species supported by IMGT V-QUEST reference directory
+
+**Success Criteria**:
+1. IMGT data downloaded for all 33 mapped species
+2. IgBLAST BLAST databases built for each species with available data
+3. Auxiliary files (*.aux) created for J gene CDR3 positions
+4. organism.yaml updated with all species configurations
+5. Multi-species AIRR annotation tests pass
+6. Multi-species renumbering tests pass
+
+**Species Coverage** (from download_imgt.py SPECIES_MAP):
+- Primates: human, rhesus_macaque, cynomolgus, gorilla, chimpanzee, orangutan_sumatran, orangutan_bornean, lemur, owl_monkey
+- Rodents: mouse, mouse_c57bl6j, rat, naked_mole_rat
+- Carnivores: dog, cat, ferret, mink
+- Ungulates: rabbit, pig, cow, sheep, goat, horse, alpaca, camel
+- Birds: chicken
+- Fish: zebrafish, atlantic_salmon, rainbow_trout, atlantic_cod, channel_catfish
+- Marine mammals: dolphin
+- Monotremes: platypus
+
+**Tasks**:
+- [x] T061: Download IMGT data for all SPECIES_MAP species using download_imgt.py
+- [x] T062: Create auxiliary file generator for J gene CDR3 start positions
+- [x] T063: Build IgBLAST databases for all downloaded species
+- [x] T064: Generate auxiliary files (*.aux) for each species
+- [x] T065: Update organism.yaml with all species configurations
+- [x] T066: Verify BLAST database integrity for all species
+- [x] T067: Test AIRR annotation with mouse species
+- [x] T068: Test AIRR annotation with non-human primate (rhesus_macaque)
+- [x] T069: Test AIRR annotation with non-mammalian species (chicken or zebrafish)
+- [x] T070: Test renumbering HMM generation for mouse
+- [x] T071: Test renumbering HMM generation for rabbit
+- [x] T072: Add multi-species integration test suite
 
 ---
 
@@ -243,7 +284,9 @@ Phase 3   Phase 4   Phase 5
           Phase 8
               ↓
           Phase 9
+              ↓
+          Phase 10
 ```
 
 ---
-*Last updated: 2026-01-21 — converted from spec-kit plan.md/tasks.md*
+*Last updated: 2026-01-21*
