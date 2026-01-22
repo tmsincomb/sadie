@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**Phase 9: Compliance & Coverage Gaps** — 0/8 tasks complete
+**Phase 10: Species Expansion** — 12/12 tasks complete ✅
 
 ## Progress Summary
 
@@ -16,9 +16,10 @@
 | Phase 6: US3 Tests | ⏳ Near Complete | 10/11 (91%) |
 | Phase 7: US4 Offline | ✅ Complete | 5/5 (100%) |
 | Phase 8: Polish | ✅ Complete | 7/7 (100%) |
-| Phase 9: Compliance | 🚧 Not Started | 0/8 (0%) |
+| Phase 9: Compliance | ✅ Complete | 8/8 (100%) |
+| Phase 10: Species Expansion | ✅ Complete | 12/12 (100%) |
 
-**Overall**: 52/62 tasks (84%)
+**Overall**: 72/74 tasks (97%)
 
 ## Remaining Work
 
@@ -28,15 +29,30 @@
 ### Phase 6 Gap
 - [ ] T035a: Test gapped AA fallback translation (gapped NT only scenario)
 
-### Phase 9 (All)
-- [ ] T053: Single-provider enforcement validation
-- [ ] T054: Tests rejecting per-segment provider params
-- [ ] T055: Clear error when provider lacks species
-- [ ] T056: Custom germline ingestion validation
-- [ ] T057: Species/chain/segment parity verification
-- [ ] T058: Default priority order test
-- [ ] T059: No G3 fallback negative test
-- [ ] T060: Fail-fast for missing gapped sequences
+### Phase 10: Species Expansion ✅ Complete
+- [x] T061: Download IMGT data for 29 SPECIES_MAP species (some species lack IMGT data)
+- [x] T062: Create auxiliary file generator script (build_aux_files.py)
+- [x] T063: Build IgBLAST BLAST databases for 29 species
+- [x] T064: Generate auxiliary files (*.aux) for species with gapped sequences
+- [x] T065: Update organism.yaml with all 29 species configurations
+- [x] T066: Verify BLAST database integrity for all species
+- [x] T067: Test AIRR annotation with mouse species
+- [x] T068: Test AIRR annotation with non-human primate (rhesus_macaque)
+- [x] T069: Test AIRR annotation with non-mammalian species (chicken)
+- [x] T070: Test renumbering HMM generation for mouse
+- [x] T071: Test renumbering HMM generation for rabbit
+- [x] T072: Add multi-species integration test suite (test_multi_species.py)
+
+### Species Summary (29 species with BLAST databases)
+- **Primates (8)**: human, rhesus_macaque, cynomolgus, gorilla, orangutan_sumatran, orangutan_bornean, lemur
+- **Rodents (4)**: mouse, mouse_c57bl6j, rat
+- **Carnivores (4)**: dog, cat, ferret, mink
+- **Ungulates (8)**: rabbit, pig, cow, sheep, goat, horse, alpaca, camel
+- **Birds (1)**: chicken
+- **Fish (5)**: zebrafish, atlantic_salmon, rainbow_trout, atlantic_cod, channel_catfish
+- **Monotremes (1)**: platypus
+
+Note: chimpanzee, owl_monkey, naked_mole_rat, dolphin have no IMGT data available
 
 ## Blockers
 
@@ -58,6 +74,7 @@ None currently identified.
 - `tests/unit/germlines/test_airr_integration.py`
 - `tests/unit/germlines/test_renumbering_integration.py`
 - `tests/unit/germlines/test_reference_integration.py`
+- `tests/unit/germlines/test_multi_species.py` — Multi-species verification (Phase 10)
 
 ## Success Criteria Status
 
@@ -73,6 +90,19 @@ None currently identified.
 
 ## Session History
 
+- **2026-01-21**: Completed Phase 10 - Species Expansion
+  - Downloaded IMGT data for 27 new species (29 total with human/mouse)
+  - Built BLAST databases for all 29 species
+  - Generated aux files for species with gapped sequences
+  - Created multi-species test suite with 18 tests (13 passed, 5 skipped)
+  - Species missing IMGT data: chimpanzee, owl_monkey, naked_mole_rat, dolphin
+- **2026-01-21**: Added Phase 10 planning
+  - New phase to populate IgBLAST databases for all 33 IMGT-supported species
+  - Tasks T061-T072: Download, build databases, create aux files, testing
+- **2026-01-21**: Phase 9 compliance complete (97% overall)
+  - Implemented priority order fix, no-fallback enforcement, strict mode
+  - Created test_compliance.py with 20 tests (all passing)
+  - Updated airr tests for germlines compatibility
 - **2026-01-21**: Converted from spec-kit to GSD format at 84% completion
 - **Previous**: Phases 1-8 completed via spec-kit workflow
 
