@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**Phase 10: Species Expansion** — 12/12 tasks complete ✅
+**All Phases Complete** — Milestone Achieved! 🎉
 
 ## Progress Summary
 
@@ -18,12 +18,46 @@
 | Phase 8: Polish | ✅ Complete | 7/7 (100%) |
 | Phase 9: Compliance | ✅ Complete | 8/8 (100%) |
 | Phase 10: Species Expansion | ✅ Complete | 12/12 (100%) |
+| Phase 11: IMGT Gapped Fix | ✅ Complete | 7/7 (100%) |
+| Phase 12: Provider Auto-Population | ✅ Complete | 11/11 (100%) |
 
-**Overall**: 74/74 tasks (100%) ✅
+**Overall**: 92/92 tasks (100%)
 
-## Remaining Work
+## Phase 12: Provider Auto-Population ✅ Complete
 
-### All Phases Complete ✅
+- [x] T080: Implement `sadie germlines populate` CLI command
+- [x] T081: Implement `IMGTProvider.download()` from existing script logic
+- [x] T082: Add version tracking for IMGT releases
+- [x] T083: Audit and download all OGRDB available species
+- [x] T084: Audit and download all VDJbase available species
+- [x] T085: Add `--force` flag for re-download
+- [x] T086: Add checkpoint/resume for fail-fast recovery
+- [x] T087: Add rich progress bars for download tracking
+- [x] T088: Integrate post-download build pipeline
+- [x] T089: Test CLI command with all providers (19/19 tests pass)
+- [x] T090: Verify downloaded data integrity
+
+### Files Created
+- `src/sadie/germlines/cli.py` — CLI logic with progress bars, checkpointing, validation
+- `tests/unit/germlines/test_cli.py` — 19 unit tests for CLI functionality
+
+### Files Modified
+- `src/sadie/app.py` — Added `germlines` command group
+- `src/sadie/germlines/providers/imgt.py` — Implemented `download()` method
+
+---
+
+## Phase 11: IMGT Gapped Fix ✅ Complete
+
+- [x] T073: Add `_get_gapped_fasta_path()` method to IMGT provider
+- [x] T074: Add `_load_gapped_sequences()` method to IMGT provider
+- [x] T075: Update `fetch_genes()` to merge gapped sequences
+- [x] T076: Test rabbit HMM generation now works
+- [x] T077: Test chicken HMM generation now works
+- [x] T078: Verify all 29 species have gapped sequences loaded (26/29 have IGHV gapped)
+- [x] T079: Run full test suite - 64/64 germlines tests pass
+
+### Previous Phases Complete ✅
 
 - [x] T004a: Verify gapped AA/NT sequences for all V/J genes (Phase 1)
 - [x] T035a: Test gapped AA fallback translation (Phase 6)
@@ -89,6 +123,33 @@ None currently identified.
 
 ## Session History
 
+- **2026-01-22**: Completed Phase 12 - Provider Auto-Population (100% complete)
+  - Implemented `sadie germlines populate` CLI command with progress bars
+  - Created `cli.py` with version tracking, checkpointing, validation
+  - Updated IMGT provider with working `download()` method
+  - Added 19 CLI tests (all passing)
+  - Total germlines tests: 88 passed
+  - **Milestone Complete**: All 12 phases finished, 92/92 tasks
+- **2026-01-22**: Planned Phase 12 - Provider Auto-Population
+  - Created detailed PLAN.md with 9 tasks
+  - CLI: `sadie germlines populate --provider <imgt|ogrdb|vdjbase|all>`
+  - Key files: app.py, providers/*.py, cli.py (new)
+  - Estimated effort: ~4 hours
+- **2026-01-22**: Updated Phase 12 - Provider Auto-Population
+  - Expanded scope: All providers (IMGT, OGRDB, VDJbase) auto-populate via CLI
+  - Decisions: CLI command trigger, all available species, fail-fast, version-check
+  - Tasks T080-T088: CLI command, IMGT download(), version tracking, all providers
+- **2026-01-22**: Added Phase 12 - OGRDB/VDJbase Expansion (later renamed)
+- **2026-01-22**: Completed Phase 11 - IMGT Gapped Fix (100% complete)
+  - Added `_get_gapped_fasta_path()` and `_load_gapped_sequences()` methods
+  - Updated `fetch_genes()` to merge gapped sequences from `*_gapped.fasta` files
+  - Rabbit and chicken HMM generation now works
+  - 26/29 species have gapped IGHV sequences (cat, goat, camel lack IGHV gapped files)
+  - All 64 germlines tests pass
+- **2026-01-21**: Added Phase 11 - IMGT Gapped Fix
+  - Root cause found: IMGT provider ignores `*_gapped.fasta` files
+  - Rabbit/chicken have 7/5 gapped files respectively that aren't being loaded
+  - Tasks T073-T079: Fix provider, test HMM generation for all species
 - **2026-01-21**: Completed Phase 6 T035a - Gapped AA fallback translation tests
   - Added TestGappedAAFallbackTranslation class with 6 tests
   - All tests passed - fallback translation verified working
@@ -114,4 +175,4 @@ None currently identified.
 - **Previous**: Phases 1-8 completed via spec-kit workflow
 
 ---
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-22*

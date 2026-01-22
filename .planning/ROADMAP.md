@@ -14,8 +14,10 @@
 | 8 | Polish | Documentation, performance validation, finalization | ✅ Complete |
 | 9 | Compliance | Close requirement gaps and enforce constitution | ✅ Complete (8/8) |
 | 10 | Species Expansion | Populate IgBLAST databases for all IMGT-supported species | ✅ Complete |
+| 11 | IMGT Gapped Fix | Fix IMGT provider to load gapped sequences from *_gapped.fasta files | ✅ Complete |
+| 12 | Provider Auto-Population | Make all providers auto-populate via CLI command | ✅ Complete |
 
-**Progress**: 74/74 tasks (100%)
+**Progress**: 92/92 tasks (100%)
 
 ---
 
@@ -266,6 +268,79 @@
 
 ---
 
+## Phase 11: IMGT Gapped Fix
+
+**Goal**: Fix IMGT provider to load gapped sequences from `*_gapped.fasta` files, enabling HMM generation for all species with gapped data
+
+**Requirements**: Enable rabbit, chicken, and other species to build HMMs for renumbering
+
+**Background**:
+The IMGT provider currently only reads `IGHV.fasta` (ungapped) and ignores `IGHV_gapped.fasta` files.
+- Human works because human's main file happens to contain dots (gapped)
+- Rabbit/chicken fail because their main files are ungapped
+- All 29 species have gapped files that should be loaded
+
+**Success Criteria**:
+1. IMGT provider loads `*_gapped.fasta` files (like OGRDB provider does)
+2. GermlineGene.sequence_gapped populated for all species with gapped data
+3. HMM generation works for rabbit, chicken, and other previously failing species
+4. All existing tests continue to pass
+
+**Tasks**:
+- [x] T073: Add `_get_gapped_fasta_path()` method to IMGT provider
+- [x] T074: Add `_load_gapped_sequences()` method to IMGT provider
+- [x] T075: Update `fetch_genes()` to merge gapped sequences
+- [x] T076: Test rabbit HMM generation now works
+- [x] T077: Test chicken HMM generation now works
+- [x] T078: Verify all 29 species have gapped sequences loaded (26/29 have IGHV gapped)
+- [x] T079: Run full test suite to ensure no regressions (64/64 passed)
+
+**Depends on**: Phase 10
+
+---
+
+## Phase 12: Provider Auto-Population
+
+**Goal**: Make all germline providers (IMGT, OGRDB, VDJbase) auto-populate via CLI command
+
+**Requirements**: Enable programmatic data population for all providers
+
+**Background**:
+Currently, provider coverage is uneven and IMGT requires manual script runs:
+- IMGT: 33 species but `download()` raises `NotImplementedError`
+- OGRDB: 2 species (human, mouse) - `download()` works
+- VDJbase: 2 species (human, rhesus_macaque) - `download()` works
+
+**Decisions** (from 12-CONTEXT.md):
+- Trigger: Explicit CLI command (`sadie germlines populate`)
+- Scope: All species available from each provider's API
+- Errors: Fail fast with checkpoint for resume
+- Updates: Version-check and update if newer
+
+**Success Criteria**:
+1. `sadie germlines populate` CLI command works
+2. IMGT provider `download()` method implemented (not NotImplementedError)
+3. All providers download all available species
+4. Version checking prevents redundant downloads
+5. Fail-fast with checkpoint enables resume after errors
+
+**Tasks**:
+- [x] T080: Implement `sadie germlines populate` CLI command
+- [x] T081: Implement `IMGTProvider.download()` from existing script logic
+- [x] T082: Add version tracking for IMGT releases
+- [x] T083: Audit and download all OGRDB available species
+- [x] T084: Audit and download all VDJbase available species
+- [x] T085: Add `--force` flag for re-download
+- [x] T086: Add checkpoint/resume for fail-fast recovery
+- [x] T087: Add rich progress bars for download tracking
+- [x] T088: Integrate post-download build pipeline (BLAST DBs, aux, internal_data)
+- [x] T089: Test CLI command with all providers
+- [x] T090: Verify downloaded data integrity
+
+**Depends on**: Phase 11
+
+---
+
 ## Dependencies
 
 ```
@@ -286,7 +361,11 @@ Phase 3   Phase 4   Phase 5
           Phase 9
               ↓
           Phase 10
+              ↓
+          Phase 11
+              ↓
+          Phase 12
 ```
 
 ---
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-22*
