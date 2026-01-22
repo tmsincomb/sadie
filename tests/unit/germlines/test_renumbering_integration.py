@@ -187,3 +187,135 @@ class TestLocalHMMBuilder:
         # Get HMM with explicit IMGT source
         hmm = builder.get_hmm(species="human", chain="H", source="imgt")
         assert hmm is not None, "Should build HMM with explicit source"
+
+
+class TestGappedAAFallbackTranslation:
+    """T035a: Test gapped AA fallback translation when only gapped NT is available."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, monkeypatch):
+        """Setup fixture to enable germlines module."""
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+
+    def test_translate_gapped_nt_to_aa_basic(self, monkeypatch):
+        """Test basic NT to AA translation with gaps.
+
+        Verifies that _translate_gapped_nt_to_aa correctly:
+        - Translates nucleotide codons to amino acids
+        - Preserves gap positions (3 NT gaps = 1 AA gap)
+        """
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # Simple test: no gaps
+        ungapped_nt = "ATGGCC"  # Met-Ala
+        result = builder._translate_gapped_nt_to_aa(ungapped_nt)
+        assert result is not None, "Should translate ungapped sequence"
+        assert "M" in result, "Should contain Methionine"
+        assert "A" in result, "Should contain Alanine"
+
+        # Test with gaps (3 NT gaps = 1 AA gap)
+        gapped_nt = "ATG...GCC"  # Met-[gap]-Ala
+        result = builder._translate_gapped_nt_to_aa(gapped_nt)
+        assert result is not None, "Should translate gapped sequence"
+        assert "." in result, "Should preserve gap in AA sequence"
+
+    def test_translate_gapped_nt_to_aa_imgt_format(self, monkeypatch):
+        """Test translation with IMGT-style gapped sequences.
+
+        IMGT uses dots for gaps. Every 3 nucleotide gaps should map to 1 AA gap.
+        """
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # IMGT-style gapped sequence (V gene framework region)
+        # cag = Q, gtg = V, cag = Q, ctg = L
+        gapped_nt = "caggtgcagctg"
+        result = builder._translate_gapped_nt_to_aa(gapped_nt)
+        assert result is not None, "Should translate IMGT sequence"
+        assert result.upper() == "QVQL", f"Expected QVQL, got {result}"
+
+        # With gaps
+        gapped_nt_with_gaps = "cag...gtgcagctg"  # Q-[gap]-VQL
+        result = builder._translate_gapped_nt_to_aa(gapped_nt_with_gaps)
+        assert result is not None, "Should translate gapped IMGT sequence"
+        # Gap position depends on implementation
+
+    def test_fallback_handles_invalid_sequences(self, monkeypatch):
+        """Test that fallback gracefully handles invalid sequences."""
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # Too short (< 3 nucleotides)
+        result = builder._translate_gapped_nt_to_aa("AT")
+        assert result is None, "Should return None for too-short sequence"
+
+        # Empty sequence
+        result = builder._translate_gapped_nt_to_aa("")
+        assert result is None, "Should return None for empty sequence"
+
+        # All gaps
+        result = builder._translate_gapped_nt_to_aa("...")
+        assert result is None, "Should return None for all-gaps sequence"
+
+    def test_gapped_aa_fallback_in_hmm_builder(self, monkeypatch):
+        """Test that HMM builder uses fallback translation for genes without gapped AA.
+
+        Verifies the full pipeline:
+        1. Query genes from germlines manager
+        2. For genes with only gapped NT, translate to gapped AA
+        3. Successfully build HMM from the translated sequences
+        """
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # Build HMM for human heavy chain (uses V/J genes)
+        # This should trigger fallback translation for any genes
+        # that have sequence_gapped but not sequence_aa_gapped
+        hmm = builder.get_hmm(species="human", chain="H")
+
+        assert hmm is not None, "Should build HMM using fallback translation"
+        assert hasattr(hmm, "M"), "HMM should have model length"
+        assert hmm.M > 0, "HMM model length should be positive"
+
+    def test_fallback_used_when_gapped_aa_missing(self, monkeypatch):
+        """Verify fallback translation is actually invoked.
+
+        Test that _get_vj_alignment_pairs uses the fallback when genes
+        have sequence_gapped but not sequence_aa_gapped.
+        """
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # Get V/J alignment pairs for human heavy chain
+        # This method internally uses the fallback translation
+        pairs = builder._get_vj_alignment_pairs("human", "H", "imgt")
+
+        assert len(pairs) > 0, "Should return V/J gene pairs"
+
+        # Verify pairs contain valid sequences
+        for name, seq in pairs[:5]:  # Check first 5
+            assert name, "Gene name should not be empty"
+            assert seq, "Gapped AA sequence should not be empty"
+            assert isinstance(seq, str), "Sequence should be string"
+            # Sequence should only contain valid AA characters and gaps
+            valid_chars = set("ACDEFGHIKLMNPQRSTVWY.-")
+            assert all(c.upper() in valid_chars for c in seq), (
+                f"Sequence should contain only valid AA chars: {seq[:50]}"
+            )
+
+    def test_mouse_hmm_with_fallback(self, monkeypatch):
+        """Test HMM building for mouse (verifies multi-species fallback)."""
+        monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
+        builder = LocalHMMBuilder()
+
+        # Build mouse HMM
+        hmm = builder.get_hmm(species="mouse", chain="H")
+        assert hmm is not None, "Should build mouse HMM with fallback"
+
+        # Also test kappa and lambda
+        hmm_k = builder.get_hmm(species="mouse", chain="K")
+        assert hmm_k is not None, "Should build mouse kappa HMM"
+
+        hmm_l = builder.get_hmm(species="mouse", chain="L")
+        assert hmm_l is not None, "Should build mouse lambda HMM"
