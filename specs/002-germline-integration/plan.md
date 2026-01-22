@@ -21,16 +21,15 @@ Connect SADIE's new germline database module to existing `sadie.airr.Airr` and `
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-The project constitution is a template without project-specific principles. Based on the codebase patterns observed:
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design and before implementation.*
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| Backwards Compatibility | ✅ PASS | Feature flag preserves G3 as default; germlines is opt-in |
-| Test Coverage | ✅ PASS | Mirrored test suite in tests/unit/germlines/ |
-| Local-First Operation | ✅ PASS | Germlines module eliminates G3 API dependency |
-| Clear Error Messages | ✅ PASS | Fail with setup instructions, no silent fallback |
+| I. Provider-Based Architecture | ✅ PASS | Providers are independent; no cross-provider dependencies |
+| II. Priority-Based Merging (NON-NEGOTIABLE) | ✅ PASS | Default priority (custom > ogrdb > vdjbase > imgt); duplicates drop lower priority with warning; no per-segment mixing (FR-014) |
+| III. Local-First Operation | ✅ PASS | Runtime uses local data only; offline coverage in US4 |
+| IV. Staged Pipeline Architecture | ✅ PASS | sources → normalized → igblast pipeline respected; no bypass |
+| V. Integration Compatibility | ✅ PASS | Backward compatibility maintained via feature flag; G3 default preserved |
 
 ## Project Structure
 
@@ -105,7 +104,7 @@ No constitution violations requiring justification. The integration follows esta
 
 ## Integration Status (Current)
 
-Based on codebase exploration, the integration is **67% complete** (34/51 tasks):
+Based on current tasks, the integration is **81% complete** (60/74 tasks):
 
 | Component | File | Status |
 |-----------|------|--------|
@@ -113,13 +112,20 @@ Based on codebase exploration, the integration is **67% complete** (34/51 tasks)
 | Renumbering HMM | `renumbering/aligners/hmmer.py` | ✅ Complete |
 | Reference system | `reference/reference.py` | ✅ Complete |
 | Feature flag | `germlines/utils/feature_flags.py` | ✅ Complete |
-| Test suite | `tests/unit/germlines/` | ✅ 82% Complete |
-| BLAST databases | `germlines/igblast/` | ⏳ Blocked (needs BLAST+) |
+| Test suite | `tests/unit/germlines/` | ✅ 91% Complete |
+| BLAST databases | `germlines/igblast/` | ⏳ Human only (Phase 10 pending) |
 | Documentation | INTEGRATION_GUIDE.md | ✅ Complete |
+| Multi-species | 33 species support | 🚧 Phase 10 in progress |
 
 ## Remaining Work
 
-1. **BLAST database building** - Requires BLAST+ tools installation
-2. **End-to-end validation** - Run full test suite with germlines backend
-3. **Offline testing** - Verify no network calls after initial setup
-4. **Result comparison** - Ensure germlines IMGT matches G3 IMGT output
+### Phase 10: Species Expansion (Current Focus)
+1. **Download IMGT data** for all 33 species in SPECIES_MAP
+2. **Build IgBLAST BLAST databases** for each downloaded species
+3. **Create auxiliary files** (*.aux) for J gene CDR3 start positions
+4. **Update organism.yaml** with all species configurations
+5. **Multi-species testing** - AIRR and renumbering tests for mouse, rabbit, rhesus_macaque, chicken/zebrafish
+
+### Outstanding Gaps
+- T004a: Verify gapped AA/NT sequences for all V/J genes
+- T035a: Test gapped AA fallback translation

@@ -253,12 +253,25 @@ class GermlineData:
 
     @staticmethod
     def get_available_datasets() -> Set[str]:
-        """A static non-instantiated method to get a list of avaialble species with the builtin data
+        """A static non-instantiated method to get a list of available species with the builtin data
 
         Returns
         -------
-        list
-            a list of tuples of the form (name, database)
+        Set[str]
+            Set of available species names
         """
+        datasets: Set[str] = set()
+        
+        # Add germlines module species if feature flag is enabled
+        if _use_germlines_module():
+            germlines_internal_data = _get_germlines_igblast_dir() / "Ig" / "internal_data"
+            if germlines_internal_data.exists():
+                for species_dir in germlines_internal_data.iterdir():
+                    if species_dir.is_dir() and not species_dir.name.startswith('.'):
+                        datasets.add(species_dir.name)
+        
+        # Also add legacy G3 species for backwards compatibility
         y = YamlRef()
-        return y.get_names()
+        datasets.update(y.get_names())
+        
+        return datasets

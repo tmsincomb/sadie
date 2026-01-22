@@ -76,11 +76,13 @@ As a researcher working in an environment without reliable internet, I want AIRR
 ### Edge Cases
 
 - Requested provider has no data for specified species: Fail with clear error message (FR-005); no silent fallback to G3.
-- Conflicting gene names across providers: First provider in priority order wins (silent resolution, consistent with germlines module design).
+- Conflicting gene names across providers: Highest-priority provider wins; lower-priority duplicates are dropped with a WARNING log (per Principle II).
 - Provider switching mid-analysis: Allowed; user responsible for maintaining consistency across linked datasets.
 - Custom germlines with invalid sequences (malformed FASTA, invalid amino acids): Validate at ingestion; reject with detailed error message identifying the specific validation failure.
 - First-time setup with unpopulated germlines: Fail with clear error message and setup instructions (no silent fallback).
 - Germlines backend query failure: No automatic fallback to G3; fail with clear error since user explicitly selected germlines backend.
+- Gene missing both gapped AA and gapped NT sequences: Fail with clear error message listing the gene name and suggesting data population via `update_databases()`.
+- Provider missing a required segment (e.g., D only in another provider): Fail with clear error; do not mix providers per segment.
 
 ## Requirements *(mandatory)*
 
@@ -92,7 +94,7 @@ As a researcher working in an environment without reliable internet, I want AIRR
 
 - **FR-003**: System MUST expose a `germline_backend` parameter accepting values "g3" (default) or "germlines" to select the backend system for germline data.
 
-- **FR-004**: System MUST use a default provider priority order (custom > ogrdb > vdjbase > imgt) when no provider is explicitly specified.
+- **FR-004**: System MUST use a default provider selection list (custom > ogrdb > vdjbase > imgt) when no provider is explicitly specified; duplicates are resolved by priority with a WARNING log.
 
 - **FR-005**: System MUST use local germlines module data instead of G3 API when germlines backend is selected.
 
@@ -109,6 +111,10 @@ As a researcher working in an environment without reliable internet, I want AIRR
 - **FR-011**: System MUST maintain identical output format/schema regardless of which germline provider is used.
 
 - **FR-012**: System MUST validate custom germline sequences at ingestion time, rejecting invalid sequences (malformed FASTA, invalid amino acids) with detailed error messages identifying the specific validation failure.
+
+- **FR-013**: System MUST ensure gapped amino acid sequences (`sequence_aa_gapped`) are available for all V and J genes used in HMM building. If pre-computed gapped AA is unavailable, the system MUST translate from gapped nucleotide sequences (`sequence_gapped`) at runtime. If neither is available, the system MUST fail with a clear error message identifying the specific gene lacking sequence data.
+
+- **FR-014**: System MUST apply a single provider selection configuration to all V/D/J segments within a run; users cannot specify different providers per segment. The selection may be a single provider or an ordered provider list.
 
 ### Non-Functional Requirements
 
@@ -150,16 +156,26 @@ As a researcher working in an environment without reliable internet, I want AIRR
 - Q: Should there be a performance expectation for germline lookups compared to G3? → A: Equivalent to G3 (no regression from current behavior)
 - Q: If the germlines backend fails for a specific query, should the system fall back to G3? → A: No fallback; fail with clear error (user chose germlines explicitly)
 - Q: What parameter name should be used to specify the germline backend? → A: `germline_backend` (values: "g3" or "germlines")
+- Q: Can V/D/J segments use different providers within one run? → A: No; provider selection is made once per run and applies uniformly across segments (single provider or ordered provider list).
 
 **Planning Phase Complete** - See [plan.md](./plan.md) for implementation artifacts.
 
 ### Session 2026-01-19
 
-- Q: How does the system handle conflicting gene names across multiple providers? → A: First provider in priority order wins (silent resolution)
+- Q: How does the system handle conflicting gene names across multiple providers? → A: Highest-priority provider wins; lower-priority duplicates dropped with WARNING log.
 - Q: How does backwards compatibility work for existing code? → A: G3 remains default; germlines is opt-in via parameter
 - Q: What scope of tests should be mirrored? → A: Mirror critical path tests only (AIRR annotation, renumbering core)
 - Q: What happens when germlines module is not populated (first-time setup)? → A: Fail with clear error message and setup instructions
 - Q: What happens when switching providers mid-analysis for linked datasets? → A: Allow switching; user responsibility for consistency
+
+## Constitution Alignment
+
+- **Principle I — Provider-Based Architecture**: Providers remain independent and self-contained; integration uses GermlineProvider interfaces without cross-provider dependencies.
+- **Principle II — Priority-Based Merging (NON-NEGOTIABLE)**: Default priority (custom > ogrdb > vdjbase > imgt) enforced; no per-segment mixing; highest-priority wins for duplicates with WARNING log.
+- **Principle III — Local-First Operation**: All runtime operations use local data only; offline scenarios covered in User Story 4 with no network reliance.
+- **Principle IV — Staged Pipeline Architecture**: Processing follows sources → normalized → igblast; integration does not bypass pipeline stages.
+- **Principle V — Integration Compatibility**: Backward compatibility preserved (G3 remains default, feature-flag opt-in); API formats remain consistent across backends.
+- **Status**: No known constitution violations.
 
 ## Assumptions
 

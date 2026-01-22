@@ -111,6 +111,18 @@ germlines/igblast/
 - Different alignment format (FASTA): Rejected - Stockholm is pyhmmer standard
 - Skip caching: Rejected - HMM building is expensive (5-10s per species/chain)
 
+**Gapped Sequence Handling** (Clarification 2026-01-21):
+The HMM builder requires gapped amino acid sequences for Stockholm alignment. The system handles this via a two-tier approach:
+1. **Primary**: Use pre-computed `sequence_aa_gapped` from germlines module
+2. **Fallback**: Translate `sequence_gapped` (gapped nucleotide) to gapped AA at runtime
+
+This fallback is implemented in `LocalHMMBuilder._translate_gapped_nt_to_aa()` which:
+- Removes gaps from NT sequence for translation
+- Maps gap positions back to AA (3 NT gaps = 1 AA gap)
+- Returns None on translation failure (logged as warning)
+
+**Researcher Note**: Ingesting gapped AA sequences directly from source (e.g., IMGT) is preferred for accuracy. Translation fallback may introduce minor discrepancies at codon boundaries containing gaps. See FR-013 in spec.md for formal requirement.
+
 ### R4: Feature Flag Integration Pattern
 
 **Question**: How to enable/disable germlines integration without breaking existing code?

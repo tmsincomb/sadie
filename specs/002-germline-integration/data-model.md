@@ -25,10 +25,10 @@ class GermlineGene(BaseModel):
     chain: str                                   # "H", "K", or "L"
 
     # Sequences
-    sequence: str                                # Ungapped nucleotide
-    sequence_gapped: Optional[str]               # IMGT-gapped nucleotide
+    sequence: str                                # Ungapped nucleotide (REQUIRED)
+    sequence_gapped: Optional[str]               # IMGT-gapped nucleotide (REQUIRED for V/J if sequence_aa_gapped missing)
     sequence_aa: Optional[str]                   # Ungapped amino acid
-    sequence_aa_gapped: Optional[str]            # IMGT-gapped amino acid
+    sequence_aa_gapped: Optional[str]            # IMGT-gapped amino acid (REQUIRED for V/J unless sequence_gapped available)
 
     # Functional annotation
     is_functional: bool = True
@@ -53,6 +53,12 @@ class GermlineGene(BaseModel):
 - `chain` must be "H", "K", or "L"
 - `sequence` must contain only valid nucleotides (ACGTN)
 - `functionality` must be "F", "ORF", or "P"
+
+**Gapped Sequence Availability (V/J genes)**:
+- For V and J segment genes used in HMM building, at least ONE of `sequence_aa_gapped` OR `sequence_gapped` MUST be present
+- If `sequence_aa_gapped` is missing, `sequence_gapped` is used for runtime translation via `LocalHMMBuilder._translate_gapped_nt_to_aa()`
+- Validation occurs at HMM build time in `LocalHMMBuilder._get_vj_alignment_pairs()`
+- Clear error message if neither is available: "Gene {name} lacks gapped sequence data for HMM building"
 
 **Used By**:
 - IgBLAST integration (nucleotide sequences)

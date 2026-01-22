@@ -33,6 +33,15 @@
 - Performance expectation: Equivalent to G3 (NFR-001)
 - Fallback behavior: No fallback to G3; fail with clear error (NFR-002)
 - Backend parameter: `germline_backend` with values "g3" (default) or "germlines" (FR-003)
+- Single-provider rule: One provider per run for all V/D/J segments; no per-segment mixing (FR-014)
+
+## Constitution Alignment
+
+- Principle I (Provider-Based Architecture): Providers remain independent; no cross-provider dependencies.
+- Principle II (Priority-Based Merging, NON-NEGOTIABLE): Default priority custom > ogrdb > vdjbase > imgt; no per-segment mixing; duplicates drop lower priority with warning.
+- Principle III (Local-First Operation): Runtime uses local data only; offline flows validated in US4.
+- Principle IV (Staged Pipeline): sources → normalized → igblast respected; no bypass.
+- Principle V (Integration Compatibility): G3 remains default via feature flag; public formats unchanged across backends.
 
 ---
 
@@ -46,6 +55,7 @@
 - [x] T002 Verify normalized germline data exists in src/sadie/germlines/normalized/human/
 - [x] T003 Build IgBLAST databases using update_databases("human") in src/sadie/germlines/pipeline.py
 - [x] T004 Verify BLAST database files exist at src/sadie/germlines/igblast/database/human/
+- [ ] T004a [US1/US2] Verify gapped AA or gapped NT sequences exist for all V/J genes via: `python -c "from sadie.germlines import get_manager; m=get_manager(); genes=[g for g in m.get_genes('human','V','H') if not g.sequence_aa_gapped and not g.sequence_gapped]; print(f'Missing gapped data: {[g.name for g in genes]}' if genes else 'All V/J genes have gapped sequences')"`
 
 **Checkpoint**: Setup verified - databases exist and are built
 
@@ -154,6 +164,7 @@
 - [x] T033 [P] [US3] Implement test_airr_annotation_with_germlines() in tests/unit/germlines/test_airr_integration.py
 - [x] T034 [P] [US3] Implement test_provider_selection() in tests/unit/germlines/test_airr_integration.py
 - [x] T035 [P] [US3] Implement test_backwards_compatibility() in tests/unit/germlines/test_airr_integration.py
+- [ ] T035a [P] [US3] Implement test_gapped_aa_fallback_translation() in tests/unit/germlines/test_renumbering_integration.py - verify HMM builds correctly when only gapped NT available (no gapped AA)
 - [x] T036 [P] [US3] Create test_renumbering_integration.py in tests/unit/germlines/test_renumbering_integration.py
 - [x] T037 [P] [US3] Implement test_hmmer_with_local_builder() in tests/unit/germlines/test_renumbering_integration.py
 - [x] T038 [P] [US3] Implement test_hmm_caching() in tests/unit/germlines/test_renumbering_integration.py
@@ -201,6 +212,65 @@
 
 ---
 
+## Phase 9: Compliance & Coverage Gaps
+
+**Purpose**: Close remaining requirement/test gaps and enforce constitution-aligned behaviors
+
+- [x] T053 [P] [US1/US2] Enforce single-provider selection validation (reject per-segment provider parameters) in germlines backend and callers (FR-014)
+- [x] T054 [P] [US1/US2] Add AIRR and renumbering tests that reject per-segment provider parameters (FR-014)
+- [x] T055 [P] [US1/US2] Implement and test clear error when requested provider lacks species data (FR-006, NFR-002)
+- [x] T056 [P] [US1/US2] Validate custom germline ingestion rejects malformed FASTA/invalid amino acids with detailed errors; add tests (FR-012)
+- [x] T057 [P] [US1/US2] Verify germlines backend supports same species/chains/segments as existing modules; add assertion tests (FR-010)
+- [x] T058 [P] [US1] Test default priority order custom > ogrdb > vdjbase > imgt (FR-004)
+- [x] T059 [P] [Cross] Add negative test ensuring germlines backend errors do not fall back to G3 when selected (NFR-002)
+- [x] T060 [P] [US3] Add fail-fast logic and tests when both gapped AA and gapped NT sequences are missing for a gene (FR-013)
+
+---
+
+## Phase 10: Species Expansion
+
+**Purpose**: Populate germlines IgBLAST databases for all IMGT-supported species to enable multi-species analysis
+
+**⚠️ External Dependency**: BLAST+ tools (makeblastdb) required for database building
+
+**Species Coverage** (33 species from download_imgt.py SPECIES_MAP):
+- Primates: human, rhesus_macaque, cynomolgus, gorilla, chimpanzee, orangutan_sumatran, orangutan_bornean, lemur, owl_monkey
+- Rodents: mouse, mouse_c57bl6j, rat, naked_mole_rat
+- Carnivores: dog, cat, ferret, mink
+- Ungulates: rabbit, pig, cow, sheep, goat, horse, alpaca, camel
+- Birds: chicken
+- Fish: zebrafish, atlantic_salmon, rainbow_trout, atlantic_cod, channel_catfish
+- Marine mammals: dolphin
+- Monotremes: platypus
+
+### Data Acquisition
+
+- [ ] T061 [P] Download IMGT data for all SPECIES_MAP species using: `python -m sadie.germlines.scripts.download_imgt --species human mouse rat rabbit rhesus_macaque cynomolgus dog cat pig cow sheep goat horse alpaca camel chicken zebrafish gorilla chimpanzee orangutan_sumatran orangutan_bornean ferret mink dolphin platypus atlantic_salmon rainbow_trout atlantic_cod channel_catfish lemur owl_monkey naked_mole_rat mouse_c57bl6j`
+
+### Database Building
+
+- [ ] T062 [P] Create auxiliary file generator script at src/sadie/germlines/scripts/build_aux_files.py for J gene CDR3 start positions
+- [ ] T063 Build IgBLAST BLAST databases for all downloaded species using BlastDBBuilder in src/sadie/germlines/builders/blast.py
+- [ ] T064 Generate auxiliary files (*.aux) for each species in src/sadie/germlines/igblast/aux_db/
+- [ ] T065 Update organism.yaml with all species configurations in src/sadie/germlines/igblast/internal_data/organism.yaml
+
+### Validation
+
+- [ ] T066 Verify BLAST database integrity for all species (check .nhr, .nin, .nsq files exist)
+- [ ] T067 Test AIRR annotation with mouse species in tests/unit/germlines/test_multi_species.py
+- [ ] T068 Test AIRR annotation with non-human primate (rhesus_macaque) in tests/unit/germlines/test_multi_species.py
+- [ ] T069 Test AIRR annotation with non-mammalian species (chicken or zebrafish) in tests/unit/germlines/test_multi_species.py
+
+### Renumbering Integration
+
+- [ ] T070 Test renumbering HMM generation for mouse in tests/unit/germlines/test_multi_species.py
+- [ ] T071 Test renumbering HMM generation for rabbit in tests/unit/germlines/test_multi_species.py
+- [ ] T072 Add multi-species integration test suite in tests/unit/germlines/test_multi_species.py
+
+**Checkpoint**: Phase 10 complete - Multi-species support fully operational
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -217,6 +287,8 @@ Phase 1 (Setup) → Phase 2 (Foundational)
                                                          └→ Phase 7 (US4: Offline)
                                                               ↓
                                                          Phase 8 (Polish)
+                                                               ↓
+                                                         Phase 9 (Compliance & Coverage)
 ```
 
 ### User Story Dependencies
@@ -308,20 +380,22 @@ With multiple developers:
 
 ## Task Progress
 
-**Total Tasks**: 52
-**Completed**: 52 (100%)
-**Remaining**: 0 (0%)
+**Total Tasks**: 74
+**Completed**: 60 (81%)
+**Remaining**: 14 (19%)
 
 | Phase | Total | Complete | Status |
 |-------|-------|----------|--------|
-| Phase 1: Setup | 4 | 4 | ✅ Complete |
+| Phase 1: Setup | 5 | 4 | ⏳ 1 remaining (T004a) |
 | Phase 2: Foundational | 5 | 5 | ✅ Complete |
 | Phase 3: US1 (AIRR) | 6 | 6 | ✅ Complete |
 | Phase 4: US2 (Renumbering) | 8 | 8 | ✅ Complete |
 | Phase 5: Reference | 7 | 7 | ✅ Complete |
-| Phase 6: US3 (Tests) | 10 | 10 | ✅ Complete |
+| Phase 6: US3 (Tests) | 11 | 10 | ⏳ 1 remaining (T035a) |
 | Phase 7: US4 (Offline) | 5 | 5 | ✅ Complete |
 | Phase 8: Polish | 7 | 7 | ✅ Complete |
+| Phase 9: Compliance & Coverage Gaps | 8 | 8 | ✅ Complete |
+| Phase 10: Species Expansion | 12 | 0 | 🚧 Not started |
 
 ---
 
@@ -336,14 +410,22 @@ With multiple developers:
 | SC-005: Results match G3 IMGT | T015, T023, T030 | ✅ Complete |
 | SC-006: Offline operation | T041-T045 | ✅ Complete |
 | SC-007: No breaking changes | T014, T022, T029, T052 | ✅ Complete |
+| FR-004: Default priority order | T058 | 🚧 Not started |
+| FR-006: Missing-species error | T055 | 🚧 Not started |
+| FR-010: Species/chain/segment parity | T057 | 🚧 Not started |
+| FR-012: Custom ingestion validation | T056 | 🚧 Not started |
+| FR-013: Gapped AA availability | T004a, T035a, T060 | ⏳ Partial |
+| FR-014: Single provider per run | T053, T054 | 🚧 Not started |
+| NFR-002: No silent G3 fallback on germlines failure | T055, T059 | 🚧 Not started |
 
 ---
 
 ## Notes
 
 **Feature Flag**: `SADIE_USE_GERMLINES_MODULE` environment variable
-- Default: "true" (use germlines module)
-- Set to "false" for G3 API fallback (backwards compatibility)
+- Default: unset/false -> uses G3 backend (backwards compatible)
+- Set to "true" to opt-in to germlines backend
+- If `germline_backend` is provided, it overrides the env flag
 
 **Backend Parameter**: `germline_backend` (per FR-003)
 - Values: "g3" (default) or "germlines"

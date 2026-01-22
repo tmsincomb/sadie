@@ -210,6 +210,16 @@ class TestAirrAnnotationMouse:
     )
 
     @pytest.fixture(autouse=True)
+    def check_infrastructure(self):
+        """Check if mouse IgBLAST internal_data exists."""
+        internal_data = GERMLINES_ROOT / "igblast" / "Ig" / "internal_data" / "mouse"
+        if not internal_data.exists():
+            pytest.skip(
+                f"Mouse AIRR annotation requires IgBLAST internal_data at {internal_data}. "
+                "This infrastructure is not yet built for non-human species."
+            )
+
+    @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
         """Enable germlines module for tests."""
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
@@ -218,20 +228,16 @@ class TestAirrAnnotationMouse:
         """Test AIRR annotation with mouse germlines."""
         from sadie.airr import Airr
         
-        try:
-            airr = Airr(reference_name="mouse")
-            result = airr.run_single("test_mouse", self.MOUSE_VH_SEQ)
-            
-            # Verify annotation succeeded
-            assert not result.empty, "Mouse AIRR annotation should return results"
-            
-            # Verify V gene was called
-            v_call = result["v_call"].iloc[0]
-            assert v_call is not None and v_call != "", "V gene should be called"
-            assert "IGHV" in str(v_call), f"V gene call should be IGHV, got {v_call}"
-            
-        except Exception as e:
-            pytest.skip(f"Mouse AIRR annotation requires full setup: {e}")
+        airr = Airr(reference_name="mouse")
+        result = airr.run_single("test_mouse", self.MOUSE_VH_SEQ)
+        
+        # Verify annotation succeeded
+        assert not result.empty, "Mouse AIRR annotation should return results"
+        
+        # Verify V gene was called
+        v_call = result["v_call"].iloc[0]
+        assert v_call is not None and v_call != "", "V gene should be called"
+        assert "IGHV" in str(v_call), f"V gene call should be IGHV, got {v_call}"
 
 
 class TestAirrAnnotationRhesus:
@@ -245,6 +251,16 @@ class TestAirrAnnotationRhesus:
     )
 
     @pytest.fixture(autouse=True)
+    def check_infrastructure(self):
+        """Check if rhesus IgBLAST internal_data exists."""
+        internal_data = GERMLINES_ROOT / "igblast" / "Ig" / "internal_data" / "rhesus_macaque"
+        if not internal_data.exists():
+            pytest.skip(
+                f"Rhesus AIRR annotation requires IgBLAST internal_data at {internal_data}. "
+                "This infrastructure is not yet built for non-human species."
+            )
+
+    @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
         """Enable germlines module for tests."""
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
@@ -253,19 +269,15 @@ class TestAirrAnnotationRhesus:
         """Test AIRR annotation with rhesus macaque germlines."""
         from sadie.airr import Airr
         
-        try:
-            airr = Airr(reference_name="rhesus_macaque")
-            result = airr.run_single("test_rhesus", self.RHESUS_VH_SEQ)
-            
-            # Verify annotation succeeded
-            assert not result.empty, "Rhesus AIRR annotation should return results"
-            
-            # Verify V gene was called
-            v_call = result["v_call"].iloc[0]
-            assert v_call is not None and v_call != "", "V gene should be called"
-            
-        except Exception as e:
-            pytest.skip(f"Rhesus AIRR annotation requires full setup: {e}")
+        airr = Airr(reference_name="rhesus_macaque")
+        result = airr.run_single("test_rhesus", self.RHESUS_VH_SEQ)
+        
+        # Verify annotation succeeded
+        assert not result.empty, "Rhesus AIRR annotation should return results"
+        
+        # Verify V gene was called
+        v_call = result["v_call"].iloc[0]
+        assert v_call is not None and v_call != "", "V gene should be called"
 
 
 class TestAirrAnnotationChicken:
@@ -279,6 +291,16 @@ class TestAirrAnnotationChicken:
     )
 
     @pytest.fixture(autouse=True)
+    def check_infrastructure(self):
+        """Check if chicken IgBLAST internal_data exists."""
+        internal_data = GERMLINES_ROOT / "igblast" / "Ig" / "internal_data" / "chicken"
+        if not internal_data.exists():
+            pytest.skip(
+                f"Chicken AIRR annotation requires IgBLAST internal_data at {internal_data}. "
+                "This infrastructure is not yet built for non-human species."
+            )
+
+    @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
         """Enable germlines module for tests."""
         monkeypatch.setenv("SADIE_USE_GERMLINES_MODULE", "true")
@@ -287,19 +309,15 @@ class TestAirrAnnotationChicken:
         """Test AIRR annotation with chicken germlines."""
         from sadie.airr import Airr
         
-        try:
-            airr = Airr(reference_name="chicken")
-            result = airr.run_single("test_chicken", self.CHICKEN_VH_SEQ)
-            
-            # Chicken annotation may fail due to limited IMGT data
-            # This test verifies the attempt works
-            if not result.empty:
-                v_call = result["v_call"].iloc[0]
-                if v_call:
-                    assert "IGHV" in str(v_call), f"V gene call should be IGHV, got {v_call}"
-                    
-        except Exception as e:
-            pytest.skip(f"Chicken AIRR annotation requires full setup: {e}")
+        airr = Airr(reference_name="chicken")
+        result = airr.run_single("test_chicken", self.CHICKEN_VH_SEQ)
+        
+        # Chicken annotation may fail due to limited IMGT data
+        # This test verifies the attempt works
+        if not result.empty:
+            v_call = result["v_call"].iloc[0]
+            if v_call:
+                assert "IGHV" in str(v_call), f"V gene call should be IGHV, got {v_call}"
 
 
 class TestRenumberingMouse:
@@ -312,16 +330,12 @@ class TestRenumberingMouse:
 
     def test_mouse_hmm_generation(self, monkeypatch):
         """Test HMM generation works for mouse germlines."""
-        try:
-            from sadie.germlines.renumbering_integration import LocalHMMBuilder
-            
-            builder = LocalHMMBuilder(species="mouse")
-            hmm = builder.get_hmm("H")
-            
-            assert hmm is not None, "Mouse HMM should be generated"
-            
-        except Exception as e:
-            pytest.skip(f"Mouse HMM generation requires full setup: {e}")
+        from sadie.germlines.renumbering_integration import LocalHMMBuilder
+        
+        builder = LocalHMMBuilder()
+        hmm = builder.get_hmm("mouse", "H")
+        
+        assert hmm is not None, "Mouse HMM should be generated"
 
 
 class TestRenumberingRabbit:
@@ -334,16 +348,12 @@ class TestRenumberingRabbit:
 
     def test_rabbit_hmm_generation(self, monkeypatch):
         """Test HMM generation works for rabbit germlines."""
-        try:
-            from sadie.germlines.renumbering_integration import LocalHMMBuilder
-            
-            builder = LocalHMMBuilder(species="rabbit")
-            hmm = builder.get_hmm("H")
-            
-            assert hmm is not None, "Rabbit HMM should be generated"
-            
-        except Exception as e:
-            pytest.skip(f"Rabbit HMM generation requires full setup: {e}")
+        from sadie.germlines.renumbering_integration import LocalHMMBuilder
+        
+        builder = LocalHMMBuilder()
+        hmm = builder.get_hmm("rabbit", "H")
+        
+        assert hmm is not None, "Rabbit HMM should be generated"
 
 
 class TestMultiSpeciesBatch:
